@@ -2,7 +2,16 @@
 #define SERVER_H
 
 #include "../network.h"
-#include "client2.h"
+#include "client.h"
+
+typedef struct {
+    SOCKET sock;
+    int max;
+    Client clients[MAX_CLIENTS];
+    int clientCount;
+    fd_set rdfs;
+    char buffer[BUF_SIZE];
+} Server;
 
 static void init(void);
 static void end(void);

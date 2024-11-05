@@ -3,8 +3,8 @@
 #include <errno.h>
 #include <string.h>
 
-#include "server2.h"
-#include "client2.h"
+#include "server.h"
+#include "client.h"
 
 static void init(void)
 {
@@ -26,107 +26,115 @@ static void end(void)
 #endif
 }
 
+static void addFDs(Server* server) {
+   FD_ZERO(&server->rdfs);
+
+   /* add STDIN_FILENO */
+   FD_SET(STDIN_FILENO, &server->rdfs);
+
+   /* add the connection socket */
+   FD_SET(server->sock, &server->rdfs);
+
+   /* add socket of each client */
+   for(int i = 0; i < server->clientCount; i++)
+   {
+      FD_SET(server->clients[i].sock, &server->rdfs);
+   }
+
+}
+
+static void handle_connection(Server* server) {
+   SOCKADDR_IN csin = {0};
+   size_t sinsize = sizeof csin;
+   int csock = accept(server->sock, (SOCKADDR *)&csin, &sinsize);
+   if (csock == SOCKET_ERROR)
+   {
+      perror("accept()");
+      return;
+   }
+
+   /* after connecting the client sends its name */
+   if (read_client(csock, server->buffer) == -1)
+   {
+      /* disconnected */
+      return;
+   }
+
+   /* what is the new maximum fd ? */
+   server->max = csock > server->max ? csock : server->max;
+
+   FD_SET(csock, &server->rdfs);
+
+   Client c = {csock};
+   strncpy(c.name, server->buffer, BUF_SIZE - 1);
+   server->clients[server->clientCount] = c;
+   server->clientCount++;
+}
+
+static void handle_clients(Server* server) {
+   int i = 0;
+   for (i = 0; i < server->clientCount; i++)
+   {
+      /* a client is talking */
+      if (FD_ISSET(server->clients[i].sock, &server->rdfs))
+      {
+         Client client = server->clients[i];
+         int c = read_client(server->clients[i].sock, server->buffer);
+         /* client disconnected */
+         if (c == 0)
+         {
+            closesocket(server->clients[i].sock);
+            remove_client(server->clients, i, &server->clientCount);
+            strncpy(server->buffer, client.name, BUF_SIZE - 1);
+            strncat(server->buffer, " disconnected !", BUF_SIZE - strlen(server->buffer) - 1);
+            send_message_to_all_clients(server->clients, client, server->clientCount, server->buffer, 1);
+         }
+         else
+         {
+            send_message_to_all_clients(server->clients, client, server->clientCount, server->buffer, 0);
+         }
+         break;
+      }
+   }
+}
+
 static void app(void)
 {
-   SOCKET sock = init_connection();
-   char buffer[BUF_SIZE];
-   /* the index for the array */
-   int actual = 0;
-   int max = sock;
-   /* an array for all clients */
-   Client clients[MAX_CLIENTS];
-
-   fd_set rdfs;
+   Server server;
+   server.sock = init_connection();
+   server.clientCount = 0;
+   server.max = server.sock;
 
    while(1)
    {
-      int i = 0;
-      FD_ZERO(&rdfs);
-
-      /* add STDIN_FILENO */
-      FD_SET(STDIN_FILENO, &rdfs);
-
-      /* add the connection socket */
-      FD_SET(sock, &rdfs);
-
-      /* add socket of each client */
-      for(i = 0; i < actual; i++)
-      {
-         FD_SET(clients[i].sock, &rdfs);
-      }
-
-      if(select(max + 1, &rdfs, NULL, NULL, NULL) == -1)
+      addFDs(&server);
+      
+      if (select(server.max + 1, &server.rdfs, NULL, NULL, NULL) == -1)
       {
          perror("select()");
          exit(errno);
       }
 
+
       /* something from standard input : i.e keyboard */
-      if(FD_ISSET(STDIN_FILENO, &rdfs))
+      if(FD_ISSET(STDIN_FILENO, &server.rdfs))
       {
+         handle_stdin(&server);
          /* stop process when type on keyboard */
          break;
       }
-      else if(FD_ISSET(sock, &rdfs))
+      else if(FD_ISSET(server.sock, &server.rdfs))
       {
-         /* new client */
-         SOCKADDR_IN csin = { 0 };
-         size_t sinsize = sizeof csin;
-         int csock = accept(sock, (SOCKADDR *)&csin, &sinsize);
-         if(csock == SOCKET_ERROR)
-         {
-            perror("accept()");
-            continue;
-         }
-
-         /* after connecting the client sends its name */
-         if(read_client(csock, buffer) == -1)
-         {
-            /* disconnected */
-            continue;
-         }
-
-         /* what is the new maximum fd ? */
-         max = csock > max ? csock : max;
-
-         FD_SET(csock, &rdfs);
-
-         Client c = { csock };
-         strncpy(c.name, buffer, BUF_SIZE - 1);
-         clients[actual] = c;
-         actual++;
+         handle_connection(&server);
       }
       else
       {
-         int i = 0;
-         for(i = 0; i < actual; i++)
-         {
-            /* a client is talking */
-            if(FD_ISSET(clients[i].sock, &rdfs))
-            {
-               Client client = clients[i];
-               int c = read_client(clients[i].sock, buffer);
-               /* client disconnected */
-               if(c == 0)
-               {
-                  closesocket(clients[i].sock);
-                  remove_client(clients, i, &actual);
-                  strncpy(buffer, client.name, BUF_SIZE - 1);
-                  strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  send_message_to_all_clients(clients, client, actual, buffer, 1);
-               }
-               else
-               {
-                  send_message_to_all_clients(clients, client, actual, buffer, 0);
-               }
-               break;
-            }
-         }
+         handle_clients(&server);
       }
    }
 
-   clear_clients(clients, actual);
-   end_connection(sock);
+   clear_clients(server.clients, server.clientCount);
+   end_connection(server.sock);
 }
 
 static void clear_clients(Client *clients, int actual)
