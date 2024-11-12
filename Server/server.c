@@ -119,7 +119,7 @@ static void app(void)
       /* something from standard input : i.e keyboard */
       if(FD_ISSET(STDIN_FILENO, &server.rdfs))
       {
-         handle_stdin(&server);
+         //handle_stdin(&server);
          /* stop process when type on keyboard */
          break;
       }
