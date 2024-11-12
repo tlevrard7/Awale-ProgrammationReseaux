@@ -8,6 +8,10 @@ dossierServeur = ./Server
 # Règle par défaut
 all: server client
 
+# Compilation de l'exécutable local
+local: awale_local.c awale.h awale.c
+	mkdir -p bin
+	gcc $(CFLAGS) -o bin/awale_local awale_local.c awale.c
 
 # Compilation de l'exécutable server
 server: $(dossierServeur)/server.c $(dossierServeur)/server.h $(dossierServeur)/client.h network.h

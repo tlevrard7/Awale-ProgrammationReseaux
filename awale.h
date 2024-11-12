@@ -1,10 +1,19 @@
 #pragma once
 
-#define WIDTH 6
+#define WIDTH 4
 #define PLAYER_COUNT 2
-#define CELL_COUNT PLAYER_COUNT * WIDTH
-#define SEEDS_PER_CELL 4
-#define SEEDS_COUNT PLAYER_COUNT * WIDTH * SEEDS_PER_CELL
+#define CELL_COUNT (PLAYER_COUNT * WIDTH)
+#define SEEDS_PER_CELL 2
+#define SEEDS_COUNT (PLAYER_COUNT * WIDTH * SEEDS_PER_CELL)
+
+enum PlayResult
+{
+    WRONG_TURN = -1,
+    PLAYED = 0,
+    INVALID_CELL = 1,
+    INVALID_EMPTY = 2,
+    INVALID_STARVATION = 3
+};
 
 enum AwaleState
 {
