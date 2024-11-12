@@ -30,3 +30,7 @@ typedef struct {
 
 Awale init_game();
 int play(Awale* awale, int player, int cell);
+
+int seeds_on_side(Awale *awale, int player);
+int is_player_cell(int player, int cell);
+int next_player(int turn);
