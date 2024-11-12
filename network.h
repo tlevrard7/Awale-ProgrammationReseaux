@@ -32,3 +32,7 @@ typedef struct in_addr IN_ADDR;
 #define MAX_CLIENTS 100
 
 #define BUF_SIZE 1024
+
+void init(void);
+void end(void);
+void end_connection(int sock);
