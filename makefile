@@ -2,26 +2,28 @@
 CFLAGS = -Wall -Wextra -g
 
 #Dossiers sources 
-dossierClient = ./Client
-dossierServeur = ./Server
+awaDir = awale
+pktDir = packets
+binDir = bin
+netDir = network
 
 # Règle par défaut
 all: server client
 
 # Compilation de l'exécutable local
-local: awale_local.c awale.h awale.c
-	mkdir -p bin
-	gcc $(CFLAGS) -o bin/awale_local awale_local.c awale.c
+local: awale_local.c $(awaDir)/awale.h $(awaDir)/awale.c
+	mkdir -p $(binDir)
+	gcc $(CFLAGS) -o $(binDir)/awale_local awale_local.c $(awaDir)/awale.c
 
 # Compilation de l'exécutable server
-server: $(dossierServeur)/server.c $(dossierServeur)/server.h $(dossierServeur)/client.h network.h
-	mkdir -p bin
-	gcc $(CFLAGS) -o bin/server $(dossierServeur)/server.c
+server: awale_server.c $(netDir)/network.h $(netDir)/network.c $(netDir)/server.h $(netDir)/server.c $(pktDir)/packets.h $(pktDir)/packets.c
+	mkdir -p $(binDir)
+	gcc $(CFLAGS) -o $(binDir)/awale_server awale_server.c $(netDir)/server.c $(netDir)/network.c $(pktDir)/packets.c
 
 # Compilation de l'exécutable client
-client: $(dossierClient)/client.c $(dossierClient)/client.h network.h
-	mkdir -p bin
-	gcc $(CFLAGS) -o bin/client $(dossierClient)/client.c
+client: awale_client.c $(netDir)/network.h $(netDir)/network.c $(netDir)/client.h $(netDir)/client.c $(pktDir)/packets.h $(pktDir)/packets.c
+	mkdir -p $(binDir)
+	gcc $(CFLAGS) -o $(binDir)/awale_client awale_client.c $(netDir)/client.c $(netDir)/network.c $(pktDir)/packets.c
 
 # Nettoyage des fichiers objets et de l'exécutable
 clean:

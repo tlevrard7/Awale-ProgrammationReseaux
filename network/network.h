@@ -28,11 +28,15 @@ typedef struct in_addr IN_ADDR;
 #endif
 
 #define CRLF "\r\n"
-#define PORT 1977
 #define MAX_CLIENTS 100
 
 #define BUF_SIZE 1024
 
-void init(void);
-void end(void);
-void end_connection(int sock);
+void init_network();
+void end_network();
+
+SOCKET open_socket();
+void close_socket(SOCKET sock);
+
+ssize_t recv_from(SOCKET sock, char *buffer);
+ssize_t send_to(SOCKET sock, const char *buffer, size_t n);

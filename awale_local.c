@@ -1,4 +1,4 @@
-#include "../awale.h"
+#include "awale/awale.h"
 #include "stdio.h"
 
 void print_sep() {
