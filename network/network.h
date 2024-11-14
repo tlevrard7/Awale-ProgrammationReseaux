@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>
+
 #ifdef WIN32
 
 #include <winsock2.h>
@@ -31,6 +33,13 @@ typedef struct in_addr IN_ADDR;
 #define MAX_CLIENTS 100
 
 #define BUF_SIZE 1024
+
+
+#ifdef NETLOG
+#define netlog(s, ...) printf("[net]" s, __VA_ARGS__)
+#else
+#define netlog(s, ...)
+#endif
 
 int check_read(int ndfs, fd_set *rdfs);
 

@@ -45,7 +45,7 @@ void close_server(Server *server) {
 }
 
 void disconnect_client(Server *server, int i) {
-    printf("[net] %d disconnected\n\r", i);
+    netlog("%d disconnected\n\r", i);
     remove_client(server, i);
     memmove(server->clients + i, server->clients + i + 1, (server->clientCount- - i - 1) * sizeof(SOCKET));
     server->clientCount--;
@@ -65,7 +65,7 @@ int accept_connection(Server *server, SOCKET *client) {
        perror("accept()");
        return 0;
     }
-    printf("[net] %i connected\n\r", server->clientCount);
+    netlog("%i connected\n\r", server->clientCount);
 
     server->maxFd = csock > server->maxFd ? csock : server->maxFd;
     server->clients[server->clientCount] = csock;
@@ -89,7 +89,7 @@ ssize_t receive_any(Server* server, int* recvFrom, char* buffer) {
         *recvFrom = i;
         ssize_t n = recv_from(server->clients[i], buffer);
         if (n <= 0) disconnect_client(server, i);
-        else printf("[net] recv %ldb from %d\n\r", n, i);
+        else netlog("recv %ldb from %d\n\r", n, i);
         return n;
    }
 
