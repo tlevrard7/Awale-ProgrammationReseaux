@@ -37,12 +37,8 @@ ssize_t receive_from(SOCKET client, char *buffer) {
    fd_set rdfs;
    FD_ZERO(&rdfs);
    FD_SET(client, &rdfs);
+   check_read(client + 1, &rdfs);
 
-   if (select(client + 1, &rdfs, NULL, NULL, NULL) == -1)
-   {
-      perror("select()");
-      exit(errno);
-   }
    if (!FD_ISSET(client, &rdfs)) return 0;
    ssize_t n = recv_from(client, buffer);
 

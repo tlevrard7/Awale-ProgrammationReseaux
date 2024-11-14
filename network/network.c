@@ -3,7 +3,20 @@
 #include <errno.h>
 #include <stdlib.h>
 
-void init_network() {
+int check_read(int ndfs, fd_set *rdfs)
+{
+    // 100ms timeout
+    struct timeval tv = {0, 100000};
+    int n;
+    if ((n = select(ndfs, rdfs, NULL, NULL, &tv)) == -1) {
+        perror("select()");
+        exit(errno);
+    }
+    return n;
+}
+
+void init_network()
+{
 #ifdef WIN32
     WSADATA wsa;
     int err = WSAStartup(MAKEWORD(2, 2), &wsa);

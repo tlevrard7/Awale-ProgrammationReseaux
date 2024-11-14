@@ -3,7 +3,7 @@
 #include "stdio.h"
 
 void on_connection(Server* server, SOCKET newClient) {
-    printf("a new socket connected\n");
+
 }
 
 void on_receive(Server *server, int recvFrom, char *buffer, size_t n) {
@@ -20,12 +20,12 @@ int main() {
 
     Server server = create_server(2025);
 
+    SOCKET newClient;
+    char buffer[BUF_SIZE];
+    int n;
+    int recvFrom;
     while (1) {
-        SOCKET newClient;
-        char buffer[BUF_SIZE];
         if (accept_connection(&server, &newClient)) on_connection(&server, newClient);
-        int n;
-        int recvFrom;
         if ((n = receive_any(&server, &recvFrom, buffer)) > 0) on_receive(&server, recvFrom, buffer, n);
     }
 

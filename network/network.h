@@ -32,6 +32,8 @@ typedef struct in_addr IN_ADDR;
 
 #define BUF_SIZE 1024
 
+int check_read(int ndfs, fd_set *rdfs);
+
 void init_network();
 void end_network();
 

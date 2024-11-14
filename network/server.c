@@ -55,6 +55,7 @@ int accept_connection(Server *server, SOCKET *client) {
     fd_set rdfs;
     FD_ZERO(&rdfs);
     FD_SET(server->sock, &rdfs);
+    check_read(server->maxFd + 1, &rdfs);
     if (!FD_ISSET(server->sock, &rdfs)) return 0;
 
     SOCKADDR_IN csin = {0};
@@ -64,6 +65,7 @@ int accept_connection(Server *server, SOCKET *client) {
        perror("accept()");
        return 0;
     }
+    printf("[net] %i connected\n\r", server->clientCount);
 
     server->maxFd = csock > server->maxFd ? csock : server->maxFd;
     server->clients[server->clientCount] = csock;
@@ -79,13 +81,8 @@ void send_all(Server * server, const char * buffer, size_t n) {
 ssize_t receive_any(Server* server, int* recvFrom, char* buffer) {
     fd_set rdfs;
     FD_ZERO(&rdfs);
-
     for(int i = 0; i < server->clientCount; i++) FD_SET(server->clients[i], &rdfs);
-
-    if (select(server->maxFd+1, &rdfs, NULL, NULL, NULL) == -1) {
-        perror("select()");
-        exit(errno);
-    }
+    check_read(server->maxFd + 1, &rdfs);
 
     for (int i = 0; i < server->clientCount; i++) {
         if (!FD_ISSET(server->clients[i], &rdfs)) continue;
