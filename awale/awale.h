@@ -1,9 +1,9 @@
 #pragma once
 
-#define WIDTH 4
+#define WIDTH 6
 #define PLAYER_COUNT 2
 #define CELL_COUNT (PLAYER_COUNT * WIDTH)
-#define SEEDS_PER_CELL 2
+#define SEEDS_PER_CELL 4
 #define SEEDS_COUNT (PLAYER_COUNT * WIDTH * SEEDS_PER_CELL)
 
 enum PlayResult
