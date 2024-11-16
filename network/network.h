@@ -36,7 +36,7 @@ typedef struct in_addr IN_ADDR;
 
 
 #ifdef NETLOG
-#define netlog(s, ...) printf("[net]" s, __VA_ARGS__)
+#define netlog(s, ...) printf("[net] " s, __VA_ARGS__)
 #else
 #define netlog(s, ...)
 #endif

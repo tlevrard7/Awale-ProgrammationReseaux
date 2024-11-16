@@ -47,7 +47,7 @@ void close_server(Server *server) {
 void disconnect_client(Server *server, int i) {
     netlog("%d disconnected\n\r", i);
     remove_client(server, i);
-    memmove(server->clients + i, server->clients + i + 1, (server->clientCount- - i - 1) * sizeof(SOCKET));
+    memmove(server->clients + i, server->clients + i + 1, (server->clientCount - i - 1) * sizeof(SOCKET));
     server->clientCount--;
 }
 
