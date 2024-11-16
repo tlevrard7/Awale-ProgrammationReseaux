@@ -1,7 +1,11 @@
 #include "packets/packets.h"
 #include "network/client.h"
 
-void on_receive(SOCKET client, char *buffer) {
+void on_disconnected(SOCKET client) {
+
+}
+
+void on_receive(SOCKET client, char *buffer, size_t n) {
 
 }
 
@@ -15,10 +19,9 @@ int main() {
     int n = serialize_ConnectionPacket(&connectionPacket, buffer);
     send_to(client, buffer, n);
 
-    // while (1) {
-    //     char buffer[BUF_SIZE];
-    //     if (receive_from(client, &buffer)) on_receive(client, &buffer);
-    // }
+    while (1) {
+        receive_from(client, on_disconnected, on_receive);
+    }
 
     close_client(client);
 

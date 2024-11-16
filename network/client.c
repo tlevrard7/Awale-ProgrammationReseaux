@@ -33,15 +33,24 @@ void close_client(SOCKET client) {
    close_socket(client);
 }
 
-ssize_t receive_from(SOCKET client, char *buffer) {
+ssize_t receive_from(SOCKET client, void on_disconnect(SOCKET client), void on_receive(SOCKET client, char *buffer, size_t n)) {
    fd_set rdfs;
    FD_ZERO(&rdfs);
    FD_SET(client, &rdfs);
    check_read(client + 1, &rdfs);
 
    if (!FD_ISSET(client, &rdfs)) return 0;
+
+   char buffer[BUF_SIZE];
    ssize_t n = recv_from(client, buffer);
 
-   if (n <= 0) printf("disconnected\n");
+   if (n <= 0) {
+      netlog("disconnected\n\r");
+      if (on_disconnect != NULL) on_disconnect(client);
+   }
+   else {
+      netlog("recv %ldb \n\r", n);
+      if (on_receive != NULL) on_receive(client, buffer, n);
+   }
    return n;
 }

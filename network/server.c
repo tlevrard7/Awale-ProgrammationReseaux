@@ -51,7 +51,7 @@ void disconnect_client(Server *server, int i) {
     server->clientCount--;
 }
 
-int accept_connection(Server *server, SOCKET *client) {
+int accept_connection(Server *server, void on_connection(Server *server, int client)) {
     fd_set rdfs;
     FD_ZERO(&rdfs);
     FD_SET(server->sock, &rdfs);
@@ -60,7 +60,7 @@ int accept_connection(Server *server, SOCKET *client) {
 
     SOCKADDR_IN csin = {0};
     socklen_t sinsize = sizeof csin;
-    int csock = *client = accept(server->sock, (SOCKADDR *)&csin, &sinsize);
+    int csock = accept(server->sock, (SOCKADDR *)&csin, &sinsize);
     if (csock == SOCKET_ERROR) {
        perror("accept()");
        return 0;
@@ -68,8 +68,10 @@ int accept_connection(Server *server, SOCKET *client) {
     netlog("%i connected\n\r", server->clientCount);
 
     server->maxFd = csock > server->maxFd ? csock : server->maxFd;
-    server->clients[server->clientCount] = csock;
+    int client = server->clientCount;
+    server->clients[client] = csock;
     server->clientCount++;
+    if (on_connection != NULL) on_connection(server, client);
 
     return 1;
 }
@@ -78,20 +80,27 @@ void send_all(Server * server, const char * buffer, size_t n) {
     for (int i = 0; i < server->clientCount; i++) send_to(server->clients[i], buffer, n);
 }
 
-ssize_t receive_any(Server* server, int* recvFrom, char* buffer) {
+ssize_t receive_any(Server *server, void on_disconnect(Server *server, int client), void on_receive(Server *server, int recvFrom, char *buffer, size_t n)) {
     fd_set rdfs;
     FD_ZERO(&rdfs);
-    for(int i = 0; i < server->clientCount; i++) FD_SET(server->clients[i], &rdfs);
-    check_read(server->maxFd + 1, &rdfs);
+    for (int i = 0; i < server->clientCount; i++) FD_SET(server->clients[i], &rdfs);
+    if (!check_read(server->maxFd + 1, &rdfs)) return 0;
 
     for (int i = 0; i < server->clientCount; i++) {
         if (!FD_ISSET(server->clients[i], &rdfs)) continue;
-        *recvFrom = i;
+        
+        char buffer[BUF_SIZE];
         ssize_t n = recv_from(server->clients[i], buffer);
-        if (n <= 0) disconnect_client(server, i);
-        else netlog("recv %ldb from %d\n\r", n, i);
+        if (n <= 0) {
+            if (on_disconnect != NULL) on_disconnect(server, i);
+            disconnect_client(server, i);
+        }
+        else {
+            netlog("recv %ldb from %d\n\r", n, i);
+            if (on_receive != NULL) on_receive(server, i, buffer, n);
+        }
         return n;
-   }
+    }
 
     return 0;
 }
