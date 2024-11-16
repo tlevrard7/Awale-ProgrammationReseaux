@@ -20,7 +20,9 @@ Awale init_game() {
 
 
 int seeds_on_side(Awale *awale, int player) {
-    // Renvoie le nombre de graines positionnées dans le camp de player
+    /* 
+        Renvoie le nombre de graines positionnées dans le camp de player
+    */
     int nbSeeds = 0; int firstCell = player*WIDTH; int lastCell = firstCell+WIDTH - 1;
     for (int i = firstCell; i <= lastCell; i++) nbSeeds+=awale->cells[i];
     return nbSeeds;
