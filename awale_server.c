@@ -16,7 +16,6 @@ void on_connected(Server *server, int numClient, ConnectionPacket packet) {
     printf("%s joined\n",packet.name); 
     // On rajoute le nouveau joueur à la liste players
     strncpy(players[numClient].name, packet.name, strlen(packet.name)); 
-    on_connection(server, numClient);
 }
 
 void send_user_names_list(Server *server, int numClientToSend){
@@ -27,14 +26,14 @@ void send_user_names_list(Server *server, int numClientToSend){
         strcpy(answerUsernamesListPacket.playersNames[i], players[i].name);
     }
     answerUsernamesListPacket.nbPlayers = server->clientCount;
-    int n = serialize_AnswerUsernamesListPacket(&answerUsernamesListPacket, buffer);
-    send_to(server->clients[numClientToSend], buffer, n);
+    Buffer buffer = serialize_AnswerUsernamesListPacket(&answerUsernamesListPacket);
+    send_to(server->clients[numClientToSend], &buffer);
 }
 
-void on_receive(Server *server, int recvFrom, char *buffer, size_t n) {
-    switch (buffer[0]) {
+void on_receive(Server *server, int recvFrom, Buffer* buffer) {
+    switch (buffer->data[0]) {
     case PACKET_CONNECTION:
-        on_connected(server, recvFrom, deserialize_ConnectionPacket(buffer, n));
+        on_connected(server, recvFrom, deserialize_ConnectionPacket(buffer));
         break;
     case PACKET_REQUEST_USER_NAMES_LIST:
         send_user_names_list(server,recvFrom);

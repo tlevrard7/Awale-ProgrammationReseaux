@@ -1,112 +1,83 @@
 #include "packets.h"
 #include "string.h"
 
-
-size_t serialize_ConnectionPacket(ConnectionPacket* packet, char *buffer) {
-    buffer[0] = PACKET_CONNECTION;
-    strcpy(buffer + 1, packet->name);
-    return 1 + strlen(packet->name)+1;
+Buffer serialize_ConnectionPacket(ConnectionPacket *packet)
+{
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_CONNECTION);
+    serialize_str(&buffer, packet->name);
+    return buffer;
 }
 
-ConnectionPacket deserialize_ConnectionPacket(char *buffer, size_t n) {
+ConnectionPacket deserialize_ConnectionPacket(Buffer* buffer) {
     ConnectionPacket packet;
-    strncpy(packet.name, buffer + 1, MAX_NAME_SIZE - 1);
+    deserialize_uint8(buffer);
+    deserialize_str(buffer, packet.name);
     return packet;
 }
 
-size_t serialize_ChatPacket(ChatPacket* packet, char *buffer) {
-    buffer[0] = PACKET_CHAT;
-    buffer[1] = packet->sender;
-    strcpy(buffer+2, packet->message);
-    return 2 + strlen(packet->message)+1;
+Buffer serialize_ChatPacket(ChatPacket* packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_CHAT);
+    serialize_uint8(&buffer, packet->sender);
+    serialize_str(&buffer, packet->message);
+    return buffer;
 }
 
-ChatPacket deserialize_ChatPacket(char *buffer, size_t n) {
+ChatPacket deserialize_ChatPacket(Buffer* buffer) {
     ChatPacket packet;
-    packet.sender = buffer[1];
-    strcpy(packet.message, buffer + 2);
+    deserialize_uint8(buffer);
+    packet.sender = deserialize_uint8(buffer);
+    deserialize_str(buffer, packet.message);
     return packet;
 }
 
-size_t serialize_RequestUsernamesListPacket(RequestUsernamesListPacket *packet, char *buffer){
-    buffer[0] = PACKET_REQUEST_USER_NAMES_LIST;
-    return 1;
+Buffer serialize_RequestUsernamesListPacket(RequestUsernamesListPacket* packet){
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_REQUEST_USER_NAMES_LIST);
+    return buffer;
 }
 
-RequestUsernamesListPacket deserialize_RequestUsernamesListPacket(char *buffer, size_t n){
+RequestUsernamesListPacket deserialize_RequestUsernamesListPacket(Buffer* buffer){
     RequestUsernamesListPacket packet;
+    deserialize_uint8(buffer);
     return packet;
 }
 
-size_t serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet, char *buffer){
+Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket* packet){
     //TO DO : gestion des dépassements
-    buffer[0] = PACKET_ANSWER_USER_NAMES_LIST;
-    
-    int nbCaractTot = 0;
-    // On concatène les str du char** pour former un seul char*
-    buffer[1] = '\0';
-    for(int i = 0; i<packet->nbPlayers; i++){
-        nbCaractTot += strlen(packet->playersNames[i]);
-        strcat(buffer,packet->playersNames[i]);
-        if (i < packet->nbPlayers - 1) {
-            strcat(buffer, "-");
-            nbCaractTot += 1;
-        }
-    }
-    return 1 + nbCaractTot + 1;
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_ANSWER_USER_NAMES_LIST);
+    serialize_uint32(&buffer, packet->nbPlayers);
+    for(int i = 0; i<packet->nbPlayers; i++) serialize_str(&buffer, packet->playersNames[i]);
+    return buffer;
 }
 
-AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(char *buffer, size_t n){
+AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer){
     //TO DO : gestion des dépassements
     AnswerUsernamesListPacket packet;
-
-    int currentNumPlayer = 0;
-    char currentName[MAX_NAME_SIZE]; int currentCursor = 0; 
-    for(int i=0; i<BUF_SIZE; i++){
-        char currentChar = buffer[i];
-        if(currentChar=='-'){
-            currentName[currentCursor] = '\0';
-            strcpy(packet.playersNames[currentNumPlayer], currentName);
-            packet.playersNames[currentNumPlayer][MAX_NAME_SIZE - 1] = '\0';
-            currentNumPlayer++; currentCursor = 0;
-            continue;
-        }
-        currentName[currentCursor] = currentChar;
-        currentCursor++;
-    }
-    packet.nbPlayers = currentNumPlayer;
-
+    deserialize_uint8(buffer);
+    packet.nbPlayers = deserialize_uint32(buffer);
+    for(int i = 0; i<packet.nbPlayers; i++) deserialize_str(buffer, packet.playersNames[i]);
     return packet;
 }
 
 
-size_t serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet, char *buffer) {
-    buffer[0] = PACKET_CHALLENGE_IN_DUEL;
-    buffer[1] = '\0'; 
-
-    strcat(buffer, packet->requesterName); strcat(buffer, "-");
-    strcat(buffer, packet->opponentName);  strcat(buffer, "-");
-    char str[1]; str[0] = packet->etat;
-    strncat(buffer, str, 1);  strcat(buffer, "-");
-
-    return 3 + strlen(packet->requesterName) + strlen(packet->opponentName) + 1 + 1; 
+Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_CHALLENGE_IN_DUEL);
+    serialize_str(&buffer, packet->requesterName);
+    serialize_str(&buffer, packet->opponentName);
+    serialize_uint8(&buffer, packet->etat);
+    return buffer; 
 }
 
-ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(char *buffer, size_t n) {
+ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer) {
     ChallengeInDuelPacket packet;
-
-    char* data = buffer+1;
-    // requesterName
-    char *delimiter1 = strchr(data, '-');
-    size_t requesterNameLength = delimiter1 - data;
-    strncpy(packet.requesterName, data, requesterNameLength); packet.requesterName[requesterNameLength] = '\0';
-    // opponentName
-    char *delimiter2 = strchr(delimiter1 + 1, '-');
-    size_t opponentNameLength = delimiter2 - (delimiter1 + 1);
-    strncpy(packet.opponentName, delimiter1 + 1, opponentNameLength); packet.opponentName[opponentNameLength] = '\0'; 
-    // etat
-    packet.etat = delimiter2[1];  
-
+    deserialize_uint8(&buffer);
+    deserialize_str(&buffer, packet.requesterName);
+    deserialize_str(&buffer, packet.opponentName);
+    packet.etat = deserialize_uint8(&buffer);
     return packet;
 }
 

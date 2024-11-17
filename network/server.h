@@ -15,5 +15,5 @@ void close_server(Server *server);
 int accept_connection(Server *server, void on_connection(Server *server, int client));
 void disconnect_client(Server *server, int i);
 
-void send_all(Server *server, const char *buffer, size_t);
-ssize_t receive_any(Server *server, void on_disconnect(Server *server, int client), void on_receive(Server *server, int recvFrom, char *buffer, size_t n));
+void send_all(Server *server, const Buffer* buffer);
+void receive_any(Server *server, void on_disconnect(Server *server, int client), void on_receive(Server *server, int recvFrom, Buffer* buffer));

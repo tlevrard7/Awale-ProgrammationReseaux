@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdio.h>
+#include "buffer.h"
 
 #ifdef WIN32
 
@@ -32,9 +33,6 @@ typedef struct in_addr IN_ADDR;
 #define CRLF "\r\n"
 #define MAX_CLIENTS 100
 
-#define BUF_SIZE 1024
-
-
 #ifdef NETLOG
 #define netlog(...) printf("[net] " __VA_ARGS__)
 #else
@@ -49,5 +47,5 @@ void end_network();
 SOCKET open_socket();
 void close_socket(SOCKET sock);
 
-ssize_t recv_from(SOCKET sock, char *buffer);
-ssize_t send_to(SOCKET sock, const char *buffer, size_t n);
+Buffer recv_from(SOCKET sock);
+void send_to(SOCKET sock, const Buffer *buffer);

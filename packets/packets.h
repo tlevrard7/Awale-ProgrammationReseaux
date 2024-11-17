@@ -1,8 +1,4 @@
-#ifdef linux
-
-#include <sys/types.h>
-
-#endif
+#pragma once
 
 #include "../network/network.h" // Pour avoir MAX_CLIENTS
 
@@ -22,30 +18,30 @@ typedef struct ConnectionPacket {
     char name[MAX_NAME_SIZE];
 } ConnectionPacket;
 
-size_t serialize_ConnectionPacket(ConnectionPacket *packet, char *buffer);
-ConnectionPacket deserialize_ConnectionPacket(char *buffer, size_t n);
+Buffer serialize_ConnectionPacket(ConnectionPacket* packet);
+ConnectionPacket deserialize_ConnectionPacket(Buffer* buffer);
 
 typedef struct ChatPacket {
     char sender;
     char message[256];
 } ChatPacket;
 
-size_t serialize_ChatPacket(ChatPacket *packet, char *buffer);
-ChatPacket deserialize_ChatPacket(char *buffer, size_t n);
+Buffer serialize_ChatPacket(ChatPacket *packet);
+ChatPacket deserialize_ChatPacket(Buffer* buffer);
 
 typedef struct RequestUsernamesListPacket{
 } RequestUsernamesListPacket;
 
-size_t serialize_RequestUsernamesListPacket(RequestUsernamesListPacket *packet, char *buffer);
-RequestUsernamesListPacket deserialize_RequestUsernamesListPacket(char *buffer, size_t n);
+Buffer serialize_RequestUsernamesListPacket(RequestUsernamesListPacket *packet);
+RequestUsernamesListPacket deserialize_RequestUsernamesListPacket(Buffer* buffer);
 
 typedef struct AnswerUsernamesListPacket{
     char playersNames[MAX_CLIENTS][MAX_NAME_SIZE+1];
     int nbPlayers;
 } AnswerUsernamesListPacket;
 
-size_t serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet, char *buffer);
-AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(char *buffer, size_t n);
+Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet);
+AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer);
 
 typedef struct ChallengeInDuelPacket{
     char requesterName[MAX_NAME_SIZE+1];
@@ -53,8 +49,8 @@ typedef struct ChallengeInDuelPacket{
     char etat; //'0' pour pas encore accepté, '1' pour accepté, '2' pour refusé
 } ChallengeInDuelPacket;
 
-size_t serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet, char *buffer);
-ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(char *buffer, size_t n);
+Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet);
+ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer);
 
 
 

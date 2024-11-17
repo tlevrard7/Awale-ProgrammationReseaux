@@ -3,8 +3,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-int check_read(int ndfs, fd_set *rdfs)
-{
+int check_read(int ndfs, fd_set *rdfs) {
     // 100ms timeout
     struct timeval tv = {0, 100000};
     int n;
@@ -15,8 +14,7 @@ int check_read(int ndfs, fd_set *rdfs)
     return n;
 }
 
-void init_network()
-{
+void init_network() {
 #ifdef WIN32
     WSADATA wsa;
     int err = WSAStartup(MAKEWORD(2, 2), &wsa);
@@ -47,17 +45,22 @@ void close_socket(SOCKET sock) {
     closesocket(sock);
 }
 
-ssize_t recv_from(SOCKET sock, char *buffer) {
-    ssize_t n = recv(sock, buffer, BUF_SIZE - 1, 0);
-    if (n < 0) perror("recv()");
-    return n;
+Buffer recv_from(SOCKET sock) {
+    Buffer buffer = new_buffer();
+    ssize_t n = recv(sock, &buffer.size, sizeof(short), 0);
+    if (n < 0) {
+        perror("recv()");
+        buffer.size = 0;
+    }
+    else recv(sock, buffer.data, buffer.size, 0);
+    return buffer;
 }
 
-ssize_t send_to(SOCKET sock, const char *buffer, size_t n) {
-    ssize_t sent = send(sock, buffer, n, 0);
-    if (sent < 0) {
+void send_to(SOCKET sock, const Buffer* buffer) {
+    ssize_t n = send(sock, &buffer->size, sizeof(short), 0);
+    if (n < 0) {
         perror("send()");
         exit(errno);
     }
-    return sent;
+    send(sock, buffer->data, buffer->size, 0);
 }
