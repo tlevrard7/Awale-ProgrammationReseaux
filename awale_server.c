@@ -29,17 +29,16 @@ void on_connection(int client, ConnectionPacket packet) {
 //     (void)packet;
 // }
 
-// void send_user_names_list(Server *server, int numClientToSend){
-//     char buffer[BUF_SIZE];
-//     AnswerUsernamesListPacket  answerUsernamesListPacket;
-//     // On récupère la liste des pseudos
-//     for(int i=0; i<server->clientCount; i++){
-//         strcpy(answerUsernamesListPacket.playersNames[i], players[i].name);
-//     }
-//     answerUsernamesListPacket.nbPlayers = server->clientCount;
-//     Buffer buffer = serialize_AnswerUsernamesListPacket(&answerUsernamesListPacket);
-//     send_to(server->clients[numClientToSend], &buffer);
-// }
+void send_user_names_list(int numClientToSend){
+    AnswerUsernamesListPacket  answerUsernamesListPacket;
+    // On récupère la liste des pseudos
+    for(int i=0; i<server.clientCount; i++){
+        strcpy(answerUsernamesListPacket.playersNames[i], players[i].name);
+    }
+    answerUsernamesListPacket.nbPlayers = server.clientCount;
+    Buffer buffer = serialize_AnswerUsernamesListPacket(&answerUsernamesListPacket);
+    send_to(server.clients[numClientToSend], &buffer);
+}
 
 // void on_receive(Server *server, int recvFrom, Buffer* buffer) {
 //     switch (buffer->data[0]) {
@@ -92,6 +91,10 @@ int main(int argc, char **argv){
             case PACKET_CONNECTION:
                 on_connection(client, deserialize_ConnectionPacket(&buffer));
                 break;
+            case PACKET_REQUEST_USER_NAMES_LIST:
+                send_user_names_list(client);
+                break;
+
             // case PACKET_PLAYER_LIST_REQ:
             //     on_player_list_req(client, deserialize_PlayerListReqPacket(&buffer));
             //     break;
