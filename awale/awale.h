@@ -6,20 +6,18 @@
 #define SEEDS_PER_CELL 4
 #define SEEDS_COUNT (PLAYER_COUNT * WIDTH * SEEDS_PER_CELL)
 
-enum PlayResult
-{
+typedef enum PlayResult {
     WRONG_TURN = -1,
     PLAYED = 0,
     INVALID_CELL = 1,
     INVALID_EMPTY = 2,
     INVALID_STARVATION = 3
-};
+} PlayResult;
 
-enum AwaleState
-{
+typedef enum AwaleState {
     STATE_PLAYING = -1,
     STATE_DRAW = -2
-};
+} AwaleState;
 
 typedef struct {
     int state;
@@ -29,7 +27,7 @@ typedef struct {
 } Awale;
 
 Awale init_game();
-int play(Awale* awale, int player, int cell);
+PlayResult play(Awale *awale, int player, int cell);
 
 int seeds_on_side(Awale *awale, int player);
 int is_player_cell(int player, int cell);

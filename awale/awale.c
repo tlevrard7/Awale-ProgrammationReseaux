@@ -61,7 +61,7 @@ int end_game(Awale *awale) {
     return awale->state;
 }
 
-int play_validate(Awale* awale, int player, int cell) {
+PlayResult play_validate(Awale* awale, int player, int cell) {
     /*
         Vérifie la validité du coup joué par 'player' (qui a choisi la case 'cell') : 
             - le jeu est bien en cours et c'est bien le tour du joueur 'player'
@@ -141,13 +141,13 @@ void play_end_check(Awale* awale, int player) {
     else if (seeds_on_side(awale, next_player(player)) == 0) end_game(awale);
 }
 
-int play(Awale *awale, int player, int cell) {
+PlayResult play(Awale *awale, int player, int cell) {
     /*
         Permet au joueur 'player' de jouer son coup après avoir choisi la case 'cell' pour jouer
         Vérifie d'abord si le coup est valide, puis joue le coup et enfin vérifie si la partie est terminée
     */
 
-    int code = play_validate(awale, player, cell);
+    PlayResult code = play_validate(awale, player, cell);
     if (code != 0) return code; // si coup pas valide, on renvoie le code d'erreur
 
     play_do(awale, player, cell);
