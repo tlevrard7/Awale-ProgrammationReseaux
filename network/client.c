@@ -7,48 +7,38 @@
 
 SOCKET create_client(const char *address, int port) {
 
-   SOCKET sock = open_socket();
-
-   struct hostent *hostinfo;
-   hostinfo = gethostbyname(address);
-   if (hostinfo == NULL) {
-      fprintf(stderr, "Unknown host %s.\n", address);
-      exit(EXIT_FAILURE);
-   }
-
-   SOCKADDR_IN sin = {0};
-   sin.sin_addr = *(IN_ADDR *)hostinfo->h_addr_list[0];
-   sin.sin_port = htons(port);
-   sin.sin_family = AF_INET;
-
-   if (connect(sock, (SOCKADDR *)&sin, sizeof(SOCKADDR)) == SOCKET_ERROR) {
-      perror("connect()");
-      exit(errno);
-   }
-
-   return sock;
+    SOCKET sock = open_socket();
+ 
+    struct hostent *hostinfo;
+    hostinfo = gethostbyname(address);
+    if (hostinfo == NULL) {
+        fprintf(stderr, "Unknown host %s.\n", address);
+        exit(EXIT_FAILURE);
+    }
+ 
+    SOCKADDR_IN sin = {0};
+    sin.sin_addr = *(IN_ADDR *)hostinfo->h_addr_list[0];
+    sin.sin_port = htons(port);
+    sin.sin_family = AF_INET;
+ 
+    if (connect(sock, (SOCKADDR *)&sin, sizeof(SOCKADDR)) == SOCKET_ERROR) {
+        perror("connect()");
+        exit(errno);
+    }
+ 
+    return sock;
 }
 
 void close_client(SOCKET client) {
-   close_socket(client);
+    close_socket(client);
 }
 
-void receive_from(SOCKET client, void on_disconnect(SOCKET client), void on_receive(SOCKET client, Buffer* buffer)) {
-   fd_set rdfs;
-   FD_ZERO(&rdfs);
-   FD_SET(client, &rdfs);
-   check_read(client + 1, &rdfs);
+void fd_set_client(SOCKET client, fd_set* rdfs) { FD_SET(client, rdfs); }
+int fd_is_set_client(SOCKET client, fd_set *rdfs) { return FD_ISSET(client, rdfs); }
 
-   if (!FD_ISSET(client, &rdfs)) return;
-
-   Buffer buffer = recv_from(client);
-
-   if (buffer.size <= 0) {
-      netlog("disconnected\n\r");
-      if (on_disconnect != NULL) on_disconnect(client);
-   }
-   else {
-      netlog("recv %db \n\r", buffer.size);
-      if (on_receive != NULL) on_receive(client, &buffer);
-   }
+Buffer receive_client(SOCKET client) {
+    Buffer buffer = recv_from(client);
+    if (buffer.size == 0) netlog("disconnected\n\r");
+    else netlog("recv %db \n\r", buffer.size);
+    return buffer;
 }

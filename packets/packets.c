@@ -1,18 +1,42 @@
 #include "packets.h"
 #include "string.h"
 
-Buffer serialize_ConnectionPacket(ConnectionPacket *packet)
-{
+void serialize_player(Buffer* buffer, Player* player){
+    serialize_uint32(buffer, player->id);
+    serialize_str(buffer, player->name);
+}
+
+Player deserialize_player(Buffer* buffer) {
+    Player player;
+    player.id = deserialize_uint32(buffer);
+    deserialize_str(buffer, player.name);
+    return player;
+}
+
+Buffer serialize_ConnectionPacket(ConnectionPacket *packet) {
     Buffer buffer = new_buffer();
     serialize_uint8(&buffer, PACKET_CONNECTION);
-    serialize_str(&buffer, packet->name);
+    serialize_player(&buffer, &packet->player);
     return buffer;
 }
 
 ConnectionPacket deserialize_ConnectionPacket(Buffer* buffer) {
     ConnectionPacket packet;
     deserialize_uint8(buffer);
-    deserialize_str(buffer, packet.name);
+    packet.player = deserialize_player(buffer);
+    return packet;
+}
+
+Buffer serialize_ConnectionAckPacket(ConnectionAckPacket* packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint32(&buffer, packet->id);
+    return buffer;
+}
+
+ConnectionAckPacket deserialize_ConnectionAckPacket(Buffer* buffer) {
+    ConnectionAckPacket packet;
+    deserialize_uint8(buffer);
+    packet.id = deserialize_uint32(buffer);
     return packet;
 }
 
@@ -33,6 +57,7 @@ ChatPacket deserialize_ChatPacket(Buffer* buffer) {
 }
 
 Buffer serialize_RequestUsernamesListPacket(RequestUsernamesListPacket* packet){
+    (void)packet;
     Buffer buffer = new_buffer();
     serialize_uint8(&buffer, PACKET_REQUEST_USER_NAMES_LIST);
     return buffer;
@@ -74,10 +99,10 @@ Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet) {
 
 ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer) {
     ChallengeInDuelPacket packet;
-    deserialize_uint8(&buffer);
-    deserialize_str(&buffer, packet.requesterName);
-    deserialize_str(&buffer, packet.opponentName);
-    packet.etat = deserialize_uint8(&buffer);
+    deserialize_uint8(buffer);
+    deserialize_str(buffer, packet.requesterName);
+    deserialize_str(buffer, packet.opponentName);
+    packet.etat = deserialize_uint8(buffer);
     return packet;
 }
 

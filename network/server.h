@@ -12,8 +12,11 @@ typedef struct Server {
 Server create_server(int port);
 void close_server(Server *server);
 
-int accept_connection(Server *server, void on_connection(Server *server, int client));
+void fd_set_server(Server* server, fd_set* rdfs);
+int fd_is_set_accept(Server* server, fd_set *rdfs);
+
+void accept_connection(Server *server);
 void disconnect_client(Server *server, int i);
+Buffer receive_server(Server *server, int* client, fd_set* rdfs);
 
 void send_all(Server *server, const Buffer* buffer);
-void receive_any(Server *server, void on_disconnect(Server *server, int client), void on_receive(Server *server, int recvFrom, Buffer* buffer));
