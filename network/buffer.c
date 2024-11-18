@@ -20,31 +20,31 @@ void on_deserialize(Buffer *buffer, short count) {
 
 void serialize_uint8(Buffer *buffer, uint8_t value) {
     buffer->data[buffer->position] = value;
-    on_serialize(buffer, sizeof(char));
+    on_serialize(buffer, sizeof(uint8_t));
 }
 uint8_t deserialize_uint8(Buffer *buffer) {
     uint8_t value = buffer->data[buffer->position];
-    on_deserialize(buffer, sizeof(char));
+    on_deserialize(buffer, sizeof(uint8_t));
     return value;
 }
 
 void serialize_uint16(Buffer *buffer, uint16_t value) {
     *((uint16_t *)(buffer->data + buffer->position)) = htons(value);
-    on_serialize(buffer, sizeof(char));
+    on_serialize(buffer, sizeof(u_int16_t));
 }
 uint16_t deserialize_uint16(Buffer *buffer) {
     uint16_t value = ntohs(*((uint16_t *)(buffer->data + buffer->position)));
-    on_deserialize(buffer, sizeof(char));
+    on_deserialize(buffer, sizeof(u_int16_t));
     return value;
 }
 
 void serialize_uint32(Buffer *buffer, uint32_t value) {
-    *((uint32_t *)(buffer->data + buffer->position)) = htons(value);
-    on_serialize(buffer, sizeof(char));
+    *((uint32_t *)(buffer->data + buffer->position)) = htonl(value);
+    on_serialize(buffer, sizeof(uint32_t));
 }
 uint32_t deserialize_uint32(Buffer *buffer) {
-    uint32_t value = ntohs(*((uint32_t *)(buffer->data + buffer->position)));
-    on_deserialize(buffer, sizeof(char));
+    uint32_t value = ntohl(*((uint32_t *)(buffer->data + buffer->position)));
+    on_deserialize(buffer, sizeof(uint32_t));
     return value;
 }
 
