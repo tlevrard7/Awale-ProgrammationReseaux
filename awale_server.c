@@ -5,51 +5,42 @@
 #include <stdlib.h>
 #include <errno.h>
 
-int nextPlayerId;
-
-typedef struct Client {
-    char name[MAX_NAME_SIZE+1];
-} Client;
 
 Server server;
-Client players[MAX_CLIENTS];
+Player players[MAX_CLIENTS];
+
+int nextPlayerId;
+int new_player_id(Player* player) {
+    (void)player;
+    return nextPlayerId++; // idea: hash(name+id)
+}
 
 void on_connection(int client, ConnectionPacket packet) {
+    if (players[client].status != CONNECTING) return;
     printf("%s joined\n",packet.player.name); 
     // On rajoute le nouveau joueur à la liste players
-    strncpy(players[server.clientCount-1].name, packet.player.name, strlen(packet.player.name));
     ConnectionAckPacket response;
-    response.id = nextPlayerId;
+
+    // TODO reconnect
+    // if (packet.player.id != -1) players[client].id = packet.player.id;
+    // else
+    players[client].status = IDLE;
+    players[client].id = new_player_id(&packet.player);
+    strcpy(players[client].name, packet.player.name);
+
+    response.id = players[client].id;
     Buffer buffer = serialize_ConnectionAckPacket(&response);
     send_to(server.clients[client], &buffer);
 }
 
-// void on_player_list_req(int client, PlayerListReqPacket packet) {
-//     (void)client;
-//     (void)packet;
-// }
-
 void send_user_names_list(int numClientToSend){
-    AnswerUsernamesListPacket  answerUsernamesListPacket;
-    // On récupère la liste des pseudos
-    for(int i=0; i<server.clientCount; i++){
-        strcpy(answerUsernamesListPacket.playersNames[i], players[i].name);
-    }
-    answerUsernamesListPacket.nbPlayers = server.clientCount;
-    Buffer buffer = serialize_AnswerUsernamesListPacket(&answerUsernamesListPacket);
+    AnswerUsernamesListPacket packet;
+    packet.count = server.clientCount;
+    for(int i=0; i<server.clientCount; i++) packet.players[i] = players[i];
+    Buffer buffer = serialize_AnswerUsernamesListPacket(&packet);
     send_to(server.clients[numClientToSend], &buffer);
 }
 
-// void on_receive(Server *server, int recvFrom, Buffer* buffer) {
-//     switch (buffer->data[0]) {
-//     case PACKET_CONNECTION:
-//         on_connected(server, recvFrom, deserialize_ConnectionPacket(buffer));
-//         break;
-//     case PACKET_REQUEST_USER_NAMES_LIST:
-//         send_user_names_list(server,recvFrom);
-//         break;
-//     }
-// }
 
 void on_disconnect(int numClient) {
     // On enlève le joueur de la liste des players
@@ -79,6 +70,8 @@ int main(int argc, char **argv){
         }
         if (fd_is_set_accept(&server, &rdfs)) {
             accept_connection(&server);
+            players[server.clientCount-1].status = CONNECTING;
+            players[server.clientCount-1].id = 0;
         } else {
             int client;
             Buffer buffer = receive_server(&server, &client, &rdfs);

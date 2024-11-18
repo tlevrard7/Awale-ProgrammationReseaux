@@ -29,6 +29,7 @@ ConnectionPacket deserialize_ConnectionPacket(Buffer* buffer) {
 
 Buffer serialize_ConnectionAckPacket(ConnectionAckPacket* packet) {
     Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_CONNECTION_ACK);
     serialize_uint32(&buffer, packet->id);
     return buffer;
 }
@@ -73,8 +74,8 @@ Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket* packet){
     //TO DO : gestion des dépassements
     Buffer buffer = new_buffer();
     serialize_uint8(&buffer, PACKET_ANSWER_USER_NAMES_LIST);
-    serialize_uint32(&buffer, packet->nbPlayers);
-    for(int i = 0; i<packet->nbPlayers; i++) serialize_str(&buffer, packet->playersNames[i]);
+    serialize_uint32(&buffer, packet->count);
+    for(size_t i = 0; i<packet->count; i++) serialize_player(&buffer, &packet->players[i]);
     return buffer;
 }
 
@@ -82,8 +83,8 @@ AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer){
     //TO DO : gestion des dépassements
     AnswerUsernamesListPacket packet;
     deserialize_uint8(buffer);
-    packet.nbPlayers = deserialize_uint32(buffer);
-    for(int i = 0; i<packet.nbPlayers; i++) deserialize_str(buffer, packet.playersNames[i]);
+    packet.count = deserialize_uint32(buffer);
+    for(size_t i = 0; i < packet.count; i++) packet.players[i] = deserialize_player(buffer);
     return packet;
 }
 

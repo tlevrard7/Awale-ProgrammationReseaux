@@ -6,12 +6,12 @@
 typedef enum PlayerStatus {
     DISCONNECTED,
     CONNECTING,
+    IDLE,
     IN_LOBBY,
     CHALLENGED,
     PLAYING,
     SPECTATING,
 } PlayerStatus;
-
 
 typedef struct Player {
     PlayerStatus status;

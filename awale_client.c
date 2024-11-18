@@ -6,48 +6,39 @@
 #include "network/client.h"
 #include "player.h"
 
+SOCKET client;
 Player localPlayer;
 
-void send_request_usernames_list(SOCKET client){
+void send_request_usernames_list(){
     RequestUsernamesListPacket requestUsernamesListPacket;
     Buffer buffer = serialize_RequestUsernamesListPacket(&requestUsernamesListPacket);
     send_to(client, &buffer);
 }
 
-void print_usernames_list(AnswerUsernamesListPacket answerUsernamesListPacket){
+void print_usernames_list(AnswerUsernamesListPacket packet){
+    if (localPlayer.status != IDLE) return;
     printf("Voici la liste des joueurs connectés :\n");
-    for(int i=0; i<answerUsernamesListPacket.nbPlayers; i++){
-        printf(" - %s\n", answerUsernamesListPacket.playersNames[i]);
+    for(size_t i = 0; i < packet.count; i++){
+        printf(" - %s (%d)\r\n", packet.players[i].name, packet.players[i].id);
     }
 }
 
-void on_stdin(char* input, SOCKET client) {
-    (void)input;
-    if(strstr(input,"list_players")){
+void on_stdin(char* input) {
+    if(input[0] == 'p' || strstr(input,"players")){
         send_request_usernames_list(client);
     }
 }
 
 void on_connection_ack(ConnectionAckPacket packet) {
-    localPlayer.status = IN_LOBBY;
+    if (localPlayer.status != CONNECTING) return;
+    localPlayer.status = IDLE;
     localPlayer.id = packet.id;
+    send_request_usernames_list();
 }
-
-// void on_player_list(PlayerListPacket packet) {
-
-// }
 
 void on_disconnected() {
     localPlayer.status = DISCONNECTED;
 }
-
-// void on_receive(SOCKET client, Buffer* buffer) {
-//     switch (buffer->data[0]) {
-//     case PACKET_ANSWER_USER_NAMES_LIST:
-//         print_usernames_list(deserialize_AnswerUsernamesListPacket(buffer));
-//         break;
-//     }
-// }
 
 int main(int argc, char **argv){
     
@@ -61,7 +52,7 @@ int main(int argc, char **argv){
     strcpy(localPlayer.name, argv[3]);
     localPlayer.id = -1;
 
-    SOCKET client = create_client(argv[1], atoi(argv[2]));
+    client = create_client(argv[1], atoi(argv[2]));
     ConnectionPacket packet = {localPlayer};
     Buffer buffer = serialize_ConnectionPacket(&packet);
     send_to(client, &buffer);
@@ -80,7 +71,7 @@ int main(int argc, char **argv){
         if (FD_ISSET(STDIN_FILENO, &rdfs)) {
             char buffer[BUF_SIZE];
             fgets(buffer, BUF_SIZE - 1, stdin);
-            on_stdin(buffer, client);
+            on_stdin(buffer);
         } else {
             Buffer buffer = receive_client(client);
             if (buffer.size == 0) {
@@ -93,9 +84,6 @@ int main(int argc, char **argv){
                 break;
             case PACKET_ANSWER_USER_NAMES_LIST:
                 print_usernames_list(deserialize_AnswerUsernamesListPacket(&buffer));
-            // case PACKET_PLAYER_LIST:
-            //     on_player_list(deserialize_PlayerListPacket(&buffer));
-            //     break;
             }
         }
     }

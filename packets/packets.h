@@ -5,18 +5,15 @@
 
 #define MAX_NAME_SIZE 8 // Pour ne pas avoir à gérer le cas où le bufffer est trop petit pour contenir tous les pseudos
 
-
-enum PACKET_IDS {
+typedef enum PacketId {
     PACKET_CONNECTION,
     PACKET_CONNECTION_ACK,
-    PACKET_PLAYER_LIST_REQ,
-    PACKET_PLAYER_LIST,
     PACKET_CHAT,
     PACKET_REQUEST_USER_NAMES_LIST,
     PACKET_ANSWER_USER_NAMES_LIST,
     PACKET_CHALLENGE_IN_DUEL,
     PACKET_GAME_PACKET,
-};
+} PacketId;
 
 typedef struct ConnectionPacket {
     Player player;
@@ -31,16 +28,6 @@ typedef struct ConnectionAckPacket {
 
 Buffer serialize_ConnectionAckPacket(ConnectionAckPacket* packet);
 ConnectionAckPacket deserialize_ConnectionAckPacket(Buffer* buffer);
-
-// typedef struct PlayerListReqPacket { } PlayerListReqPacket;
-
-// Buffer serialize_PlayerListReqPacket(PlayerListReqPacket* packet);
-// PlayerListReqPacket deserialize_PlayerListReqPacket(Buffer* buffer);
-
-// typedef struct PlayerListPacket { } PlayerListPacket;
-
-// Buffer serialize_PlayerListPacket(PlayerListPacket* packet);
-// PlayerListPacket deserialize_PlayerListPacket(Buffer* buffer);
 
 typedef struct ChatPacket {
     char sender;
@@ -57,8 +44,8 @@ Buffer serialize_RequestUsernamesListPacket(RequestUsernamesListPacket *packet);
 RequestUsernamesListPacket deserialize_RequestUsernamesListPacket(Buffer* buffer);
 
 typedef struct AnswerUsernamesListPacket{
-    char playersNames[MAX_CLIENTS][MAX_NAME_SIZE+1];
-    int nbPlayers;
+    uint32_t count;
+    Player players[MAX_CLIENTS];
 } AnswerUsernamesListPacket;
 
 Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet);
