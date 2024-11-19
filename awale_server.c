@@ -15,6 +15,15 @@ int new_player_id(Player* player) {
     return nextPlayerId++; // idea: hash(name+id)
 }
 
+int get_num_client_by_idClient(int idClient){
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if ((int) players[i].id == idClient) {
+            return i;
+        }
+    }
+    return -1; 
+}
+
 void on_connection(int client, ConnectionPacket packet) {
     if (players[client].status != CONNECTING) return;
     printf("%s joined\n",packet.player.name); 
@@ -41,6 +50,42 @@ void send_user_names_list(int numClientToSend){
     send_to(server.clients[numClientToSend], &buffer);
 }
 
+void process_challenge_in_duel_packet(int client, ChallengeInDuelPacket packet){
+    switch(packet.etat){
+        Buffer buffer;
+        int requesterClient;
+        case SENT:
+            // Un client vient de challenger un autre client, on doit transmettre au challengé
+            int opponentClient = get_num_client_by_idClient(packet.opponent.id);
+            if(opponentClient!=-1){
+                // le challengé existe
+                buffer = serialize_ChallengeInDuelPacket(&packet);
+                send_to(server.clients[opponentClient], &buffer);
+            }
+            else{
+                // le challengé n'existe pas, on prévient le requester
+                packet.etat = OPPONENT_DOESNT_EXIST;
+                buffer = serialize_ChallengeInDuelPacket(&packet);
+                send_to(server.clients[client], &buffer);
+            }
+            break;
+        case ACCEPTED:
+            // On l'envoie au requester 
+            buffer = serialize_ChallengeInDuelPacket(&packet);
+            requesterClient = get_num_client_by_idClient(packet.requester.id);
+            send_to(server.clients[requesterClient], &buffer);
+            break;
+        case REFUSED:
+            // On l'envoie au requester 
+            buffer = serialize_ChallengeInDuelPacket(&packet);
+            requesterClient = get_num_client_by_idClient(packet.requester.id);
+            send_to(server.clients[requesterClient], &buffer);
+            break;
+        case OPPONENT_DOESNT_EXIST:
+            // ne doit pas arriver normalement car c'est le serveur qui met cet été
+            break;
+    }
+}
 
 void on_disconnect(int numClient) {
     // On enlève le joueur de la liste des players
@@ -87,7 +132,9 @@ int main(int argc, char **argv){
             case PACKET_REQUEST_USER_NAMES_LIST:
                 send_user_names_list(client);
                 break;
-
+            case PACKET_CHALLENGE_IN_DUEL:
+                process_challenge_in_duel_packet(client, deserialize_ChallengeInDuelPacket(&buffer));
+                break;
             // case PACKET_PLAYER_LIST_REQ:
             //     on_player_list_req(client, deserialize_PlayerListReqPacket(&buffer));
             //     break;

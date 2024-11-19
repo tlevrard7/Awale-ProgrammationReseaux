@@ -92,8 +92,8 @@ AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer){
 Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet) {
     Buffer buffer = new_buffer();
     serialize_uint8(&buffer, PACKET_CHALLENGE_IN_DUEL);
-    serialize_str(&buffer, packet->requesterName);
-    serialize_str(&buffer, packet->opponentName);
+    serialize_player(&buffer, &packet->requester);
+    serialize_player(&buffer, &packet->opponent);
     serialize_uint8(&buffer, packet->etat);
     return buffer; 
 }
@@ -101,8 +101,8 @@ Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet) {
 ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer) {
     ChallengeInDuelPacket packet;
     deserialize_uint8(buffer);
-    deserialize_str(buffer, packet.requesterName);
-    deserialize_str(buffer, packet.opponentName);
+    packet.requester = deserialize_player(buffer);
+    packet.opponent = deserialize_player(buffer);
     packet.etat = deserialize_uint8(buffer);
     return packet;
 }

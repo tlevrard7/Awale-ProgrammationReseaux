@@ -51,10 +51,17 @@ typedef struct AnswerUsernamesListPacket{
 Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet);
 AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer);
 
+enum STATE_CHALLENGE{
+    SENT, // On vient juste de l'envoyer pas encore de réponse
+    OPPONENT_DOESNT_EXIST,
+    ACCEPTED,
+    REFUSED,
+};
+
 typedef struct ChallengeInDuelPacket{
-    char requesterName[MAX_NAME_SIZE+1];
-    char opponentName[MAX_NAME_SIZE+1];
-    char etat; //'0' pour pas encore accepté, '1' pour accepté, '2' pour refusé
+    Player requester;
+    Player opponent;
+    enum STATE_CHALLENGE etat;
 } ChallengeInDuelPacket;
 
 Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet);

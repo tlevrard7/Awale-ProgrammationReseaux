@@ -9,6 +9,51 @@
 SOCKET client;
 Player localPlayer;
 
+void process_challenge_in_duel_packet(ChallengeInDuelPacket packet){
+    switch(packet.etat){
+        case SENT:
+            // On a été challengé
+            char r;
+            questionReponseDefi:
+                printf("%s vous a défié\n",packet.requester.name);
+                printf("Acceptez vous le challenge ? \n yes : y \n no : n ");
+                scanf(" %c", &r); 
+                if (r == 'y') {
+                    packet.etat = ACCEPTED;
+                } else if (r == 'n') {
+                    packet.etat = REFUSED;
+                } else {
+                    printf("Entrée invalide. Veuillez recommencer\n");
+                    goto questionReponseDefi; 
+                }
+            
+            Buffer buffer = serialize_ChallengeInDuelPacket(&packet);
+            send_to(client, &buffer);
+            break;
+        case OPPONENT_DOESNT_EXIST:
+            // On a challengé qlq mais le serveur nous a dit qu'il n'existait pas
+            printf("Vous avez défié %d mais ce joueur n'existe pas\n",packet.opponent.id);
+            break;
+        case ACCEPTED:
+            printf("%s a accepté votre challenge ! La partie va commencer. \n",packet.opponent.name);
+            // TO DO : Intégrer le début d'une partie
+            break;
+        case REFUSED:
+            printf("%s a refusé votre challenge !\n",packet.opponent.name);
+            break;
+    }
+}
+
+void send_challenge_in_duel(int id_opponent){
+    ChallengeInDuelPacket challengeInDuelPacket;
+    Player requester = localPlayer; challengeInDuelPacket.requester = requester; 
+    Player opponent; opponent.id = id_opponent; challengeInDuelPacket.opponent = opponent;
+    challengeInDuelPacket.etat = SENT;
+    Buffer buffer = serialize_ChallengeInDuelPacket(&challengeInDuelPacket);
+    send_to(client, &buffer);
+}
+
+
 void send_request_usernames_list(){
     RequestUsernamesListPacket requestUsernamesListPacket;
     Buffer buffer = serialize_RequestUsernamesListPacket(&requestUsernamesListPacket);
@@ -26,6 +71,17 @@ void print_usernames_list(AnswerUsernamesListPacket packet){
 void on_stdin(char* input) {
     if(input[0] == 'p' || strstr(input,"players")){
         send_request_usernames_list(client);
+    }
+    else if(input[0] == 'c' || strstr(input,"challenge")){
+        int id;
+        questionDemandeDefi : 
+            printf("Saisissez l'id du joueur que vous voulez défier' : \n");
+            if (scanf(" %d", &id) != 1) {
+                printf("Erreur : Saisie invalide.");
+                goto questionDemandeDefi;
+            }
+
+        send_challenge_in_duel(id);
     }
 }
 
@@ -84,9 +140,13 @@ int main(int argc, char **argv){
                 break;
             case PACKET_ANSWER_USER_NAMES_LIST:
                 print_usernames_list(deserialize_AnswerUsernamesListPacket(&buffer));
+                break;
+            case PACKET_CHALLENGE_IN_DUEL:
+                process_challenge_in_duel_packet(deserialize_ChallengeInDuelPacket(&buffer));
+                break;
             }
-        }
-    }
+        } 
+    }  
 
     close_client(client);
 
