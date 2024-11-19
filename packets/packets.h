@@ -16,6 +16,7 @@ typedef enum PacketId {
     PACKET_AWALE_SYNC,
     PACKET_AWALE_PLAY,
     PACKET_AWALE_PLAY_ACK,
+    PACKET_AWALE_RECONNECT,
 } PacketId;
 
 typedef struct ConnectionPacket {
@@ -91,4 +92,11 @@ typedef struct AwalePlayAckPacket{
 Buffer serialize_AwalePlayAckPacket(AwalePlayAckPacket *packet);
 AwalePlayAckPacket deserialize_AwalePlayAckPacket(Buffer* buffer);
 
+typedef struct AwaleReconnectPacket{
+    Awale awale;
+    Player opponent;
+    int playerIndex;
+} AwaleReconnectPacket;
 
+Buffer serialize_AwaleReconnectPacket(AwaleReconnectPacket *packet);
+AwaleReconnectPacket deserialize_AwaleReconnectPacket(Buffer* buffer);

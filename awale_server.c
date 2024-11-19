@@ -58,17 +58,39 @@ void remove_game(int gameIndex) {
 
 void on_connection(int client, ConnectionPacket packet) {
     if (players[client].status != CONNECTING) return;
-    printf("%s joined\r\n",packet.player.name); 
-    // On rajoute le nouveau joueur à la liste players
 
-    players[client].status = IDLE;
-    players[client].id = new_player_id(&packet.player);
+    // On rajoute le nouveau joueur à la liste players
+    if (packet.player.id == 0) {
+        printf("%s joined\r\n",packet.player.name); 
+        players[client].status = IDLE;
+        players[client].id = new_player_id(&packet.player);
+    } else {
+        players[client].id = packet.player.id;
+        printf("%s reconnected\r\n", packet.player.name);
+        for (size_t i = 0; i < gameCount; i++) {
+            if (get_game_player_index(&games[i], players[client].id) == -1) continue;
+            players[client].gameId = games[i].id;
+            break;
+        }
+        players[client].status = players[client].gameId == 0 ? IDLE : PLAYING;
+    }
     strcpy(players[client].name, packet.player.name);
 
     ConnectionAckPacket response;
     response.id = players[client].id;
     Buffer buffer = serialize_ConnectionAckPacket(&response);
     send_to(server.clients[client], &buffer);
+
+    if (players[client].status == PLAYING) {
+        int gIndex = get_game_index(players[client].gameId);
+        int playerIndex = get_game_player_index(&games[gIndex], players[client].id);
+        AwaleReconnectPacket packet = {
+            games[gIndex].awale,
+            players[get_num_client_by_idClient(games[gIndex].playerIds[1 - playerIndex])],
+            playerIndex};
+        Buffer buffer = serialize_AwaleReconnectPacket(&packet);
+        send_to(server.clients[client], &buffer);
+    }
 }
 
 void send_user_names_list(int numClientToSend){

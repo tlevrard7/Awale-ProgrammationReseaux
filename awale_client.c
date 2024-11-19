@@ -180,6 +180,15 @@ void on_awale_sync(AwaleSyncPacket packet) {
     if (packet.awale.state >= 0) localPlayer.status = IDLE;
 }
 
+void on_awale_reconnect(AwaleReconnectPacket packet) {
+    if (localPlayer.status != IDLE) return;
+    printf("Reconnection à la partie en cours \r\n");
+    localPlayer.status = PLAYING;
+    opponent = packet.opponent;
+    awalePlayerIndex = packet.playerIndex;
+    display_awale(&packet.awale);
+}
+
 void on_stdin(char* input) {
     switch (localPlayer.status) {
     case IDLE:
@@ -205,22 +214,19 @@ void on_stdin(char* input) {
             send_challenge_in_duel(id);
         }
         break;
-    case PLAYING:
-        int cell = -1;
-        do {
-            int input;
-            printf("Saisissez un numéro de cellule' : ");
-            if (scanf(" %d", &input) != 1) {
-                printf("Erreur : Saisie invalide.");
-                while (getchar() != '\n'); // Vide le buffer d'entrée
-                continue;
-            }
-            cell = input;
-        } while (cell == -1);
-        AwalePlayPacket awalePlayPacket = {cell};
-        Buffer buffer = serialize_AwalePlayPacket(&awalePlayPacket);
-        send_to(client, &buffer);
+    case PLAYING: {
+        char *end;
+        long c = strtol(input, &end, 10);
+        if (end == input) {
+            printf("Erreur : Saisie invalide\r\n");
+        } else {
+            int cell = c;
+            AwalePlayPacket awalePlayPacket = {cell};
+            Buffer buffer = serialize_AwalePlayPacket(&awalePlayPacket);
+            send_to(client, &buffer);
+        }
         break;
+    }
     default:
         break;
     }
@@ -238,16 +244,14 @@ void on_disconnected() {
 }
 
 int main(int argc, char **argv){
-    
-    if(argc != 4)
-    {
+    if (argc != 4 && argc != 5) {
         printf("Usage : %s <address> <port> <pseudo> [id]\r\n", argv[0]);
         return 1;
     }
 
     init_network();
     strcpy(localPlayer.name, argv[3]);
-    localPlayer.id = 0;
+    localPlayer.id = argc == 4 ? 0 : atoi(argv[4]);
 
     client = create_client(argv[1], atoi(argv[2]));
     ConnectionPacket packet = {localPlayer};
@@ -290,6 +294,9 @@ int main(int argc, char **argv){
                 break;
             case PACKET_AWALE_SYNC:
                 on_awale_sync(deserialize_AwaleSyncPacket(&buffer));
+                break;
+            case PACKET_AWALE_RECONNECT:
+                on_awale_reconnect(deserialize_AwaleReconnectPacket(&buffer));
                 break;
             }
         } 

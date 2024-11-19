@@ -107,40 +107,31 @@ ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer) {
     return packet;
 }
 
-
-void serialize_cells(Buffer* buffer, int* cells){
-    for(int i=0;i<CELL_COUNT;i++) serialize_uint32(buffer, cells[i]);
-}
-
-void serialize_score(Buffer* buffer, int* score){
-    for(int i=0;i<PLAYER_COUNT;i++) serialize_uint32(buffer, score[i]);
+void serialize_awale(Buffer* buffer, Awale* awale){
+    serialize_uint32(buffer, awale->state);
+    for(int i=0;i<CELL_COUNT;i++) serialize_uint32(buffer, awale->cells[i]);
+    serialize_uint32(buffer, awale->turn);
+    for(int i=0;i<PLAYER_COUNT;i++) serialize_uint32(buffer, awale->score[i]);
 }
 
 Buffer serialize_AwaleSyncPacket(AwaleSyncPacket *packet) {
     Buffer buffer = new_buffer();
     serialize_uint8(&buffer, PACKET_AWALE_SYNC);
-    serialize_uint32(&buffer, packet->awale.state);
-    serialize_cells(&buffer, packet->awale.cells);
-    serialize_uint32(&buffer, packet->awale.turn);
-    serialize_score(&buffer, packet->awale.score);
+    serialize_awale(&buffer, &packet->awale);
     return buffer;
 }
 
-void deserialize_score(Buffer* buffer, int* score){
-    for(int i=0;i<PLAYER_COUNT;i++) score[i] = deserialize_uint32(buffer);
-}
-
-void deserialize_cells(Buffer* buffer, int* cells){
-    for(int i=0;i<CELL_COUNT;i++) cells[i] = deserialize_uint32(buffer);
+void deserialize_awale(Buffer* buffer, Awale* awale){
+    awale->state = deserialize_uint32(buffer);
+    for(int i=0;i<CELL_COUNT;i++) awale->cells[i] = deserialize_uint32(buffer);
+    awale->turn = deserialize_uint32(buffer);
+    for(int i=0;i<PLAYER_COUNT;i++) awale->score[i] = deserialize_uint32(buffer);
 }
 
 AwaleSyncPacket deserialize_AwaleSyncPacket(Buffer *buffer) {
     AwaleSyncPacket packet;
     deserialize_uint8(buffer);
-    packet.awale.state = deserialize_uint32(buffer);
-    deserialize_cells(buffer, packet.awale.cells);
-    packet.awale.turn = deserialize_uint32(buffer);
-    deserialize_score(buffer, packet.awale.score);
+    deserialize_awale(buffer, &packet.awale);
     return packet;
 }
 
@@ -169,5 +160,23 @@ AwalePlayAckPacket deserialize_AwalePlayAckPacket(Buffer *buffer) {
     AwalePlayAckPacket packet;
     deserialize_uint8(buffer);
     packet.result = deserialize_uint8(buffer);
+    return packet;
+}
+
+Buffer serialize_AwaleReconnectPacket(AwaleReconnectPacket *packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_AWALE_RECONNECT);
+    serialize_awale(&buffer, &packet->awale);
+    serialize_player(&buffer, &packet->opponent);
+    serialize_uint32(&buffer, packet->playerIndex);
+    return buffer;
+}
+
+AwaleReconnectPacket deserialize_AwaleReconnectPacket(Buffer *buffer) {
+    AwaleReconnectPacket packet;
+    deserialize_uint8(buffer);
+    deserialize_awale(buffer, &packet.awale);
+    packet.opponent = deserialize_player(buffer);
+    packet.playerIndex = deserialize_uint32(buffer);
     return packet;
 }
