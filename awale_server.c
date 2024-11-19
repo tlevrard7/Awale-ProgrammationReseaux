@@ -99,6 +99,7 @@ void process_challenge_in_duel_packet(int client, ChallengeInDuelPacket packet){
                 // le challengé existe
                 players[client].status = CHALLENGED;
                 players[opponentClient].status = CHALLENGED;
+                packet.opponent = players[opponentClient];
                 buffer = serialize_ChallengeInDuelPacket(&packet);
                 send_to(server.clients[opponentClient], &buffer);
             }

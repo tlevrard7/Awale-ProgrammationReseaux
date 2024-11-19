@@ -8,6 +8,8 @@
 
 SOCKET client;
 Player localPlayer;
+Player opponent;
+int awalePlayerIndex;
 
 void process_challenge_in_duel_packet(ChallengeInDuelPacket packet){
     switch(packet.etat){
@@ -36,16 +38,21 @@ void process_challenge_in_duel_packet(ChallengeInDuelPacket packet){
             Buffer buffer = serialize_ChallengeInDuelPacket(&packet);
             send_to(client, &buffer);
             localPlayer.status = packet.etat == ACCEPTED ? PLAYING : IDLE;
+            opponent = packet.requester;
+            awalePlayerIndex = 1;
             break;
         case OPPONENT_DOESNT_EXIST:
             if (localPlayer.status != CHALLENGED) return;
             localPlayer.status = IDLE;
             // On a challengé qlq mais le serveur nous a dit qu'il n'existait pas
-            printf("Vous avez défié %d mais ce joueur n'existe pas\r\n",packet.opponent.id);
+            printf("Vous avez défié %d mais ce joueur n'existe pas ou n'est pas disponible\r\n",packet.opponent.id);
             break;
         case ACCEPTED:
             if (localPlayer.status != CHALLENGED) return;
             localPlayer.status = PLAYING;
+            opponent = packet.opponent;
+            awalePlayerIndex = 0;
+
             printf("%s a accepté votre challenge ! La partie va commencer.\r\n",packet.opponent.name);
             break;
         case REFUSED:
@@ -59,8 +66,11 @@ void process_challenge_in_duel_packet(ChallengeInDuelPacket packet){
 
 void send_challenge_in_duel(int id_opponent){
     ChallengeInDuelPacket challengeInDuelPacket;
-    Player requester = localPlayer; challengeInDuelPacket.requester = requester; 
-    Player opponent; opponent.id = id_opponent; challengeInDuelPacket.opponent = opponent;
+    Player requester = localPlayer;
+    challengeInDuelPacket.requester = requester; 
+    Player opponent;
+    opponent.id = id_opponent;
+    challengeInDuelPacket.opponent = opponent;
     challengeInDuelPacket.etat = SENT;
     Buffer buffer = serialize_ChallengeInDuelPacket(&challengeInDuelPacket);
     send_to(client, &buffer);
@@ -105,26 +115,69 @@ void print_sep() {
     printf("+\r\n");
 }
 
+void print_score(Awale* awale, int player) {
+    printf(
+        "| %s %s : %dpts \r\n",
+        awale->turn == player ? ">>" : "  ",
+        (awalePlayerIndex == player ? localPlayer : opponent).name,
+        awale->score[player]
+    );
+}
+
 void display_awale(Awale* awale) {
+    /*
+ 11 10  9  8  7  6 
++--+--+--+--+--+--+
+| 4| 4| 4| 4| 4| 4| >> Player2 : 12p
++--+--+--+--+--+--+
+| 4| 4| 4| 4| 4| 4|    Player1 : 24p
++--+--+--+--+--+--+
+  0  1  2  3  4  5 
+
+C'est a vous de jouer 
+
+    */
+
+    for (int i = 0; i < WIDTH; i++) printf(" %2d", CELL_COUNT - 1 - i); // Affichage des indices
+    printf("\r\n");
+    
     print_sep();
 
     for (int i = 0; i < WIDTH; i++) printf("|%2d", awale->cells[CELL_COUNT - 1 - i]);
-    printf("|\r\n");
+    print_score(awale, 1);
 
     print_sep();
 
-    for (int i = 0; i < WIDTH; i++) printf("|%2d", awale->cells[i]);
-    printf("|\r\n");
+    for (int i = 0; i < WIDTH; i++) printf("|%2d", awale->cells[i]); // Affichage de la première ligne
+    print_score(awale, 0);
 
     print_sep();
+    
+    for (int i = 0; i < WIDTH; i++) printf(" %2d", i); // Affichage des indices
+    printf("\r\n");
+
+    switch (awale->state) {
+    case STATE_PLAYING:
+        if (awale->turn == awalePlayerIndex) printf("C'est à vous de jouer. Choisissez une case.\r\n");
+        else printf("En attente du coup de %s...\r\n", opponent.name);
+        break;
+    case STATE_DRAW:
+        printf("Égalité\r\n");
+        break;
+
+    default: // Win
+        if (awale->state == awalePlayerIndex) printf("Vous avez gagné !\r\n");
+        else printf("%s a gagné\r\n", opponent.name);
+        break;
+    }
+    printf("\r\n");
+    printf("\r\n");
 }
 
 void on_awale_sync(AwaleSyncPacket packet) {
     if (localPlayer.status != PLAYING) return;
     display_awale(&packet.awale);
-    if (packet.awale.state >= 0) {
-        localPlayer.status = IDLE;
-    }
+    if (packet.awale.state >= 0) localPlayer.status = IDLE;
 }
 
 void on_stdin(char* input) {
@@ -149,7 +202,6 @@ void on_stdin(char* input) {
                 }
                 id = input;
             } while (id == -1);
-
             send_challenge_in_duel(id);
         }
         break;
@@ -189,7 +241,7 @@ int main(int argc, char **argv){
     
     if(argc != 4)
     {
-        printf("Usage : %s <address> <port> <pseudo>\r\n", argv[0]);
+        printf("Usage : %s <address> <port> <pseudo> [id]\r\n", argv[0]);
         return 1;
     }
 

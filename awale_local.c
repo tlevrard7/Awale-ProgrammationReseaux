@@ -10,6 +10,8 @@ void print_sep() {
 void display_awale(Awale* awale) {
     print_sep();
 
+    for (int i = 0; i < WIDTH; i++) printf("|%2d", CELL_COUNT - 1 - i); // Affichage des indices
+    printf("|\r\n");
     for (int i = 0; i < WIDTH; i++) printf("|%2d", awale->cells[CELL_COUNT - 1 - i]);
     printf("|\r\n");
 
