@@ -16,9 +16,9 @@ local: awale_local.c $(awaDir)/awale.h $(awaDir)/awale.c
 	gcc $(CFLAGS) $(DEFINES) -o $(binDir)/awale_local awale_local.c $(awaDir)/awale.c
 
 # Compilation de l'exécutable server
-server: awale_server.c $(netDir)/network.h $(netDir)/network.c $(netDir)/server.h $(netDir)/server.c $(netDir)/buffer.h $(netDir)/buffer.c $(pktDir)/packets.h $(pktDir)/packets.c player.h
+server: awale_server.c $(netDir)/network.h $(netDir)/network.c $(netDir)/server.h $(netDir)/server.c $(netDir)/buffer.h $(netDir)/buffer.c $(pktDir)/packets.h $(pktDir)/packets.c player.h $(awaDir)/awale.c $(awaDir)/awale.h
 	mkdir -p $(binDir)
-	gcc $(CFLAGS) $(DEFINES) -o $(binDir)/awale_server awale_server.c $(netDir)/server.c $(netDir)/network.c $(netDir)/buffer.c $(pktDir)/packets.c
+	gcc $(CFLAGS) $(DEFINES) -o $(binDir)/awale_server awale_server.c $(netDir)/server.c $(netDir)/network.c $(netDir)/buffer.c $(pktDir)/packets.c $(awaDir)/awale.c
 
 # Compilation de l'exécutable client
 client: awale_client.c $(netDir)/network.h $(netDir)/network.c $(netDir)/client.h $(netDir)/client.c $(netDir)/buffer.h $(netDir)/buffer.c $(pktDir)/packets.h $(pktDir)/packets.c player.h

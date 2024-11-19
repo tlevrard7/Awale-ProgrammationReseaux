@@ -20,7 +20,7 @@ typedef enum AwaleState {
 } AwaleState;
 
 typedef struct {
-    int state;
+    AwaleState state;
     int cells[CELL_COUNT];
     int turn;
     int score[PLAYER_COUNT];

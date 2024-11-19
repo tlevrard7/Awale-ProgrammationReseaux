@@ -61,7 +61,7 @@ void accept_connection(Server *server) {
        perror("accept()");
        return;
     }
-    netlog("%i connected\n\r", server->clientCount);
+    netlog("%d connected\r\n", csock);
 
     server->maxFd = csock > server->maxFd ? csock : server->maxFd;
     int client = server->clientCount;
@@ -77,10 +77,7 @@ Buffer receive_server(Server *server, int* client, fd_set* rdfs) {
     for (int i = 0; i < server->clientCount; i++) {
         if (!FD_ISSET(server->clients[i], rdfs)) continue;
         *client = i;
-        Buffer buffer = recv_from(server->clients[i]);
-        if (buffer.size <= 0) netlog("%d disconnected\n\r", i);
-        else netlog("recv %db from %d\n\r", buffer.size, i);
-        return buffer;
+        return recv_from(server->clients[i]);
     }
     *client = -1;
     return new_buffer();

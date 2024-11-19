@@ -2,6 +2,7 @@
 
 #include "../network/network.h"
 #include "../player.h"
+#include "../awale/awale.h"
 
 #define MAX_NAME_SIZE 8 // Pour ne pas avoir à gérer le cas où le bufffer est trop petit pour contenir tous les pseudos
 
@@ -12,7 +13,9 @@ typedef enum PacketId {
     PACKET_REQUEST_USER_NAMES_LIST,
     PACKET_ANSWER_USER_NAMES_LIST,
     PACKET_CHALLENGE_IN_DUEL,
-    PACKET_GAME_PACKET,
+    PACKET_AWALE_SYNC,
+    PACKET_AWALE_PLAY,
+    PACKET_AWALE_PLAY_ACK,
 } PacketId;
 
 typedef struct ConnectionPacket {
@@ -51,20 +54,41 @@ typedef struct AnswerUsernamesListPacket{
 Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet);
 AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer);
 
-enum STATE_CHALLENGE{
+typedef enum STATE_CHALLENGE{
     SENT, // On vient juste de l'envoyer pas encore de réponse
     OPPONENT_DOESNT_EXIST,
     ACCEPTED,
     REFUSED,
-};
+} STATE_CHALLENGE;
 
 typedef struct ChallengeInDuelPacket{
     Player requester;
     Player opponent;
-    enum STATE_CHALLENGE etat;
+    STATE_CHALLENGE etat;
 } ChallengeInDuelPacket;
 
 Buffer serialize_ChallengeInDuelPacket(ChallengeInDuelPacket *packet);
 ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer);
+
+typedef struct AwaleSyncPacket{
+    Awale awale;
+} AwaleSyncPacket;
+
+Buffer serialize_AwaleSyncPacket(AwaleSyncPacket *packet);
+AwaleSyncPacket deserialize_AwaleSyncPacket(Buffer* buffer);
+
+typedef struct AwalePlayPacket{
+    uint8_t cell;
+} AwalePlayPacket;
+
+Buffer serialize_AwalePlayPacket(AwalePlayPacket *packet);
+AwalePlayPacket deserialize_AwalePlayPacket(Buffer* buffer);
+
+typedef struct AwalePlayAckPacket{
+    PlayResult result;
+} AwalePlayAckPacket;
+
+Buffer serialize_AwalePlayAckPacket(AwalePlayAckPacket *packet);
+AwalePlayAckPacket deserialize_AwalePlayAckPacket(Buffer* buffer);
 
 

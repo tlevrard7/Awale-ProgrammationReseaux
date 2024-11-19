@@ -7,7 +7,7 @@ void print_sep() {
     printf("+\r\n");
 }
 
-void display_grid(Awale* awale) {
+void display_awale(Awale* awale) {
     print_sep();
 
     for (int i = 0; i < WIDTH; i++) printf("|%2d", awale->cells[CELL_COUNT - 1 - i]);
@@ -24,7 +24,7 @@ void display_grid(Awale* awale) {
 int main() {
     Awale awale = init_game();
     while (awale.state == STATE_PLAYING) {
-        display_grid(&awale);
+        display_awale(&awale);
         printf("Player %d: ", awale.turn+1);
         int cell = 0;
         scanf("%d", &cell);

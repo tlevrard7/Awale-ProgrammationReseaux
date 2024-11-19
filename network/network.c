@@ -52,7 +52,11 @@ Buffer recv_from(SOCKET sock) {
         perror("recv()");
         buffer.size = 0;
     }
-    else recv(sock, buffer.data, buffer.size, 0);
+    else {
+        if (buffer.size == 0) netlog("%d disconnected\r\n", sock);
+        else netlog("recv %db from %d\r\n", buffer.size, sock);
+        recv(sock, buffer.data, buffer.size, 0);
+    }
     return buffer;
 }
 
@@ -63,4 +67,5 @@ void send_to(SOCKET sock, const Buffer* buffer) {
         exit(errno);
     }
     send(sock, buffer->data, buffer->size, 0);
+    netlog("send %db to %d \r\n", buffer->size, sock);
 }

@@ -108,4 +108,66 @@ ChallengeInDuelPacket deserialize_ChallengeInDuelPacket(Buffer* buffer) {
 }
 
 
+void serialize_cells(Buffer* buffer, int* cells){
+    for(int i=0;i<CELL_COUNT;i++) serialize_uint32(buffer, cells[i]);
+}
 
+void serialize_score(Buffer* buffer, int* score){
+    for(int i=0;i<PLAYER_COUNT;i++) serialize_uint32(buffer, score[i]);
+}
+
+Buffer serialize_AwaleSyncPacket(AwaleSyncPacket *packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_AWALE_SYNC);
+    serialize_uint32(&buffer, packet->awale.state);
+    serialize_cells(&buffer, packet->awale.cells);
+    serialize_uint32(&buffer, packet->awale.turn);
+    serialize_score(&buffer, packet->awale.score);
+    return buffer;
+}
+
+void deserialize_score(Buffer* buffer, int* score){
+    for(int i=0;i<PLAYER_COUNT;i++) score[i] = deserialize_uint32(buffer);
+}
+
+void deserialize_cells(Buffer* buffer, int* cells){
+    for(int i=0;i<CELL_COUNT;i++) cells[i] = deserialize_uint32(buffer);
+}
+
+AwaleSyncPacket deserialize_AwaleSyncPacket(Buffer *buffer) {
+    AwaleSyncPacket packet;
+    deserialize_uint8(buffer);
+    packet.awale.state = deserialize_uint32(buffer);
+    deserialize_cells(buffer, packet.awale.cells);
+    packet.awale.turn = deserialize_uint32(buffer);
+    deserialize_score(buffer, packet.awale.score);
+    return packet;
+}
+
+Buffer serialize_AwalePlayPacket(AwalePlayPacket *packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_AWALE_PLAY);
+    serialize_uint8(&buffer, packet->cell);
+    return buffer;
+}
+
+AwalePlayPacket deserialize_AwalePlayPacket(Buffer *buffer) {
+    AwalePlayPacket packet;
+    deserialize_uint8(buffer);
+    packet.cell = deserialize_uint8(buffer);
+    return packet;
+}
+
+Buffer serialize_AwalePlayAckPacket(AwalePlayAckPacket *packet) {
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_AWALE_PLAY_ACK);
+    serialize_uint8(&buffer, packet->result);
+    return buffer;
+}
+
+AwalePlayAckPacket deserialize_AwalePlayAckPacket(Buffer *buffer) {
+    AwalePlayAckPacket packet;
+    deserialize_uint8(buffer);
+    packet.result = deserialize_uint8(buffer);
+    return packet;
+}

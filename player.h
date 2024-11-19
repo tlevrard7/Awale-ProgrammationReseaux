@@ -7,14 +7,19 @@ typedef enum PlayerStatus {
     DISCONNECTED,
     CONNECTING,
     IDLE,
-    IN_LOBBY,
     CHALLENGED,
     PLAYING,
-    SPECTATING,
 } PlayerStatus;
 
 typedef struct Player {
-    PlayerStatus status;
     uint32_t id;
+    PlayerStatus status;
     char name[256];
+    uint32_t gameId;
 } Player;
+
+typedef struct Game {
+    uint32_t id;
+    uint32_t playerIds[PLAYER_COUNT];
+    Awale awale;
+} Game;

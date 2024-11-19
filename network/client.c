@@ -12,7 +12,7 @@ SOCKET create_client(const char *address, int port) {
     struct hostent *hostinfo;
     hostinfo = gethostbyname(address);
     if (hostinfo == NULL) {
-        fprintf(stderr, "Unknown host %s.\n", address);
+        fprintf(stderr, "Unknown host %s.\r\n", address);
         exit(EXIT_FAILURE);
     }
  
@@ -37,8 +37,5 @@ void fd_set_client(SOCKET client, fd_set* rdfs) { FD_SET(client, rdfs); }
 int fd_is_set_client(SOCKET client, fd_set *rdfs) { return FD_ISSET(client, rdfs); }
 
 Buffer receive_client(SOCKET client) {
-    Buffer buffer = recv_from(client);
-    if (buffer.size == 0) netlog("disconnected\n\r");
-    else netlog("recv %db \n\r", buffer.size);
-    return buffer;
+    return recv_from(client);
 }
