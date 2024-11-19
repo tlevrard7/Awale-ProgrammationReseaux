@@ -50,7 +50,7 @@ int main(int argc, char **argv){
 
     init_network();
     strcpy(localPlayer.name, argv[3]);
-    localPlayer.id = -1;
+    localPlayer.id = 0;
 
     client = create_client(argv[1], atoi(argv[2]));
     ConnectionPacket packet = {localPlayer};
