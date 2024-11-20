@@ -1,64 +1,75 @@
 # Serveur de jeu Awale
-#### Contributeurs : 
+### Contributeurs : 
 
 - JEANNE Corentin
 - LEVRARD Thomas
 
 ## Comment compiler ?
-1. Se positionner dans le répertoire racine du projet puis executez la commande suivante :
-```bash
+1. Se positionner dans le répertoire racine du projet (**ProgrammationReseaux-Awale/**) puis executer la commande suivante :
+   
+    ```bash
     $ make all
-```
-## Fonctionnalités implémentées
-1. Connexion au serveur avec un pseudo et un id (facultatif)
-2. Affichage de la liste des pseudos des joueurs en ligne
-3. Un client A peut défier un autre client B. B peut accepter ou refuser. S'il accepte, cela lance une partie d'Awale.
-4. Si un joueur se déconnecte pendant une partie, il peut se reconnecter et reprendre la partie. Pour cela, il doit indiquer son id qui lui avait été attribué (ou qu'il avait choisi) lors de sa connexion initiale.
-5. Possibilité d'avoir plusieurs parties d'Awale en même temps
+    ```
+    **Remarque :** Il faut être sur une machine linux
+## Fonctionnalités implémentées 
+### 🔗 Connexion et affichage des joueurs  
+- **Connexion au serveur**
+   - Un joueur peut se connecter en fournissant un **pseudo** et un **id** (facultatif)  
+- **Liste des joueurs en ligne**  
+   - Un joueur peut afficher la liste des pseudos des joueurs en ligne 
+### 🕹️ Défis et parties  
+- **Défis entre joueurs**  
+   - Un joueur **A** peut défier un autre joueur **B**
+   - **B** peut **accepter** ou **refuser**  
+   - En cas d’acceptation, une **partie d’Awale** démarre immédiatement
+### ♻️ Gestion multi-parties  
+- **Parties simultanées**  
+   - Le serveur peut prendre en charge plusieurs **parties d’Awale** en parallèle.
+### 📜 Affichage des parties en cours  
+- **Affichage des parties en cours**  
+   - Un joueur peut consulter la **liste des parties d’Awale** qui sont entrain de se jouer
+### 📩 Communication entre joueurs  
+- **Messagerie instantanée (Chat)**  
+   - Un joueur peut envoyer un **message privé** à un autre joueur connecté
+### 🔌 Gestion des déconnexions  
+- **Reconnexion et reprise de partie**  
+   - Si un joueur se déconnecte en pleine partie, il peut se **reconnecter** et **reprendre la partie**  
+   - Nécessite l’utilisation de l’**id attribué ou choisi** lors de la connexion initiale
 
 ## Comment utiliser l'application ?
-0. Se positionner dans le répertoire racine du projet
-#### Partie serveur : 
+0. Se positionner dans le répertoire racine du projet (**ProgrammationReseaux-Awale/**)
+### Partie serveur : 
 1. Démarrer le serveur : 
     ```bash
     $ ./bin/awale_server <port>
     ```
-#### Partie client : 
+### Partie client : 
 1. Connecter un ou plusieurs clients à ce serveur :
     ```bash
     $ ./bin/awale_client <adresse_serveur> <port_serveur> <pseudo> [id]
     ```
-    Remarque : l'id est facultatif donc si aucun id n'est précisé, le serveur en attribuera automatiquement un id au joueur
+    **Remarque :** l'id est facultatif donc si aucun id n'est précisé, le serveur attribuera automatiquement un id au joueur
     
-2. Choisir une commande parmis : 
+2. Choisir une commande parmi : 
 - **help** (ou h) : Affiche la liste des commandes disponibles
 - **players** (ou p) : Affiche la liste des pseudos (et id) des joueurs en ligne
-- **challenge** (ou c) : Permet de dire qu'on veut défier un joueur (voir *Détails sur le challenge*)
-    - Il sera alors demandé de saisir l'id du joueur à défier 
+- **games** (ou g) : Affiche la liste des parties qui se jouent actuellement
+- **message** (ou m) : Permet de spécifier qu'on veut envoyer un message à un autre joueur
+    - Il sera alors demandé de saisir l'id du joueur destinatire. Puis, de saisir le message à envoyer.
+- **challenge** (ou c) : Permet de spécifier qu'on veut défier un joueur (voir *Détails sur le challenge*)
+    - Il sera alors demandé de saisir l'id du joueur à défier.
 
-##### Détails sur le challenge :
-- **Si vous avez demandé un challenge :** 
-    - vous serez notifié quand le joueur aura accepté ou refusé le défi (ou encore si le joueur n'existe pas)
+#### Détails sur le challenge :
+- **Si vous avez challengé un joueur :** 
+    - Vous serez notifié quand le joueur aura accepté ou refusé le défi (ou encore si le joueur n'existe pas)
 - **Si vous avez reçu un challenge**
     - Pour l'**accepter** : tapez 'y', cela va alors créer une nouvelle partie d'Awale (voir *Détails sur une partie d'Awale*) 
     - Pour le **refuser** : tapez 'n'
 
-##### Détails sur une partie d'awale :
+#### Détails sur une partie d'awale :
 Une fois qu'un défi a été accepté, les 2 joueurs concernés rejoignent une nouvelle partie d'Awale (se joue dans le sens trigonométrique). Le joueur qui commence est alors choisi au hasard. Le plateau, les scores, le joueur qui doit jouer le coup ainsi que les indices des différentes cases du plateau sont affichés.
 Les joueurs vont donc pouvoir jouer, à tour de rôle, leur coup. Pour ce  faire, il leur suffit de saisir dans le terminal l'indice de la case du plateau choisie pour leur coup.
 
-**Remarque** : Si un joueur se déconnecte pendant une partie, il peut se reconnecter et reprendre la partie en cours. Pour cela, il doit indiquer son id qui lui avait été attribué (ou qu'il avait choisi) lors de sa connexion initiale 
-
-    
-
-## Fonctionnalités à implémenter
-- Chat
-- Observateurs de partie
-- Un joueur peut écrire une bio. On peut demander au serveur de nous afficher la bio d’un pseudo particulier.
-- Afficher clairement notre id lors de la deconnexion pour savoir lequel mettre pour se reco
-- Mettre un timeout lorsqu'un client se déconnecte pendant une partie càd que s'il ne se reconnecte pas après n secondes, la partie est arrêtée
-- Mettre un timeout à la demande de challenge ?
-- Mode privé: un joueur peut limiter la liste des observateurs à une liste d’amis. 
-- Sauvegarde de partie jouée pour pouvoir la regarder par la suite.
+**Remarque** : Si un joueur se déconnecte pendant une partie, il peut se reconnecter et reprendre la partie en cours. Pour cela, lors de sa reconnexion (voir 1.) il doit indiquer son id qui lui avait été attribué (ou qu'il avait choisi) lors de sa connexion initiale. 
 
 
