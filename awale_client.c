@@ -233,6 +233,8 @@ void on_stdin(char* input) {
     case IDLE:
         if(input[0] == 'h' || strstr(input,"help")){
             printf("p/players : afficher la liste des joueurs connectés \r\n");
+            printf("g/games : afficher la liste des parties qui se jouent actuellement \r\n");
+            printf("m/message : envoyer un message à un autre joueur \r\n");
             printf("c/challenge : défier un joueur en duel' : \r\n");
         }
         if(input[0] == 'p' || strstr(input,"players")){
