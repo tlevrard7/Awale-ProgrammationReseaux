@@ -5,6 +5,7 @@
 #include "../awale/awale.h"
 
 #define MAX_NAME_SIZE 8 // Pour ne pas avoir à gérer le cas où le bufffer est trop petit pour contenir tous les pseudos
+#define MAX_GAMES 8
 
 typedef enum PacketId {
     PACKET_CONNECTION,
@@ -17,6 +18,8 @@ typedef enum PacketId {
     PACKET_AWALE_PLAY,
     PACKET_AWALE_PLAY_ACK,
     PACKET_AWALE_RECONNECT,
+    PACKET_REQUEST_GAMES_LIST,
+    PACKET_ANSWER_GAMES_LIST,
 } PacketId;
 
 typedef struct ConnectionPacket {
@@ -34,7 +37,8 @@ Buffer serialize_ConnectionAckPacket(ConnectionAckPacket* packet);
 ConnectionAckPacket deserialize_ConnectionAckPacket(Buffer* buffer);
 
 typedef struct ChatPacket {
-    char sender;
+    Player sender;
+    Player receiver;
     char message[256];
 } ChatPacket;
 
@@ -54,6 +58,23 @@ typedef struct AnswerUsernamesListPacket{
 
 Buffer serialize_AnswerUsernamesListPacket(AnswerUsernamesListPacket *packet);
 AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer);
+
+
+typedef struct RequestGamesListPacket{
+} RequestGamesListPacket;
+
+Buffer serialize_RequestGamesListPacket(RequestGamesListPacket *packet);
+RequestGamesListPacket deserialize_RequestGamesListPacket(Buffer* buffer);
+
+
+typedef struct AnswerGamesListPacket{
+    uint32_t nbGames;
+    Game games[MAX_GAMES];
+    Player players[MAX_GAMES][PLAYER_COUNT];
+} AnswerGamesListPacket;
+
+Buffer serialize_AnswerGamesListPacket(AnswerGamesListPacket *packet);
+AnswerGamesListPacket deserialize_AnswerGamesListPacket(Buffer* buffer);
 
 typedef enum STATE_CHALLENGE{
     SENT, // On vient juste de l'envoyer pas encore de réponse

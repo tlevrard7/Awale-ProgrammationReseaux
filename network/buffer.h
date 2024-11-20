@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 2048
 
 typedef struct Buffer {
     uint8_t data[BUF_SIZE];

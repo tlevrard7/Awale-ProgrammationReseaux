@@ -44,7 +44,8 @@ ConnectionAckPacket deserialize_ConnectionAckPacket(Buffer* buffer) {
 Buffer serialize_ChatPacket(ChatPacket* packet) {
     Buffer buffer = new_buffer();
     serialize_uint8(&buffer, PACKET_CHAT);
-    serialize_uint8(&buffer, packet->sender);
+    serialize_player(&buffer, &packet->sender);
+    serialize_player(&buffer, &packet->receiver);
     serialize_str(&buffer, packet->message);
     return buffer;
 }
@@ -52,7 +53,8 @@ Buffer serialize_ChatPacket(ChatPacket* packet) {
 ChatPacket deserialize_ChatPacket(Buffer* buffer) {
     ChatPacket packet;
     deserialize_uint8(buffer);
-    packet.sender = deserialize_uint8(buffer);
+    packet.sender = deserialize_player(buffer);
+    packet.receiver = deserialize_player(buffer);
     deserialize_str(buffer, packet.message);
     return packet;
 }
@@ -85,6 +87,64 @@ AnswerUsernamesListPacket deserialize_AnswerUsernamesListPacket(Buffer* buffer){
     deserialize_uint8(buffer);
     packet.count = deserialize_uint32(buffer);
     for(size_t i = 0; i < packet.count; i++) packet.players[i] = deserialize_player(buffer);
+    return packet;
+}
+
+Buffer serialize_RequestGamesListPacket(RequestGamesListPacket* packet){
+    (void)packet;
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_REQUEST_GAMES_LIST);
+    return buffer;
+}
+
+RequestGamesListPacket deserialize_RequestGamesListPacket(Buffer* buffer){
+    RequestGamesListPacket packet;
+    deserialize_uint8(buffer);
+    return packet;
+}
+
+void serialize_awale(Buffer* buffer, Awale* awale);
+void deserialize_awale(Buffer* buffer, Awale* awale);
+
+void serialize_game(Buffer* buffer, Game* game){
+    serialize_uint32(buffer, game->id);
+    for(int i=0; i<PLAYER_COUNT; i++)  serialize_uint32(buffer, game->playerIds[i]);
+    serialize_awale(buffer, &game->awale);
+}
+
+Game deserialize_game(Buffer* buffer) {
+    Game game;
+    game.id = deserialize_uint32(buffer);
+    for(int i=0; i<PLAYER_COUNT; i++)  game.playerIds[i] = deserialize_uint32(buffer);
+    deserialize_awale(buffer, &game.awale);
+    return game;
+}
+
+Buffer serialize_AnswerGamesListPacket(AnswerGamesListPacket* packet){
+    //TO DO : gestion des dépassements
+    Buffer buffer = new_buffer();
+    serialize_uint8(&buffer, PACKET_ANSWER_GAMES_LIST);
+    serialize_uint32(&buffer, packet->nbGames);
+    for(size_t i = 0; i<packet->nbGames; i++) serialize_game(&buffer, &packet->games[i]);
+    for(size_t i = 0; i<packet->nbGames; i++){
+        for(size_t j = 0; j<PLAYER_COUNT; j++){
+            serialize_player(&buffer, &packet->players[i][j]);
+        }
+    }
+    return buffer;
+}
+
+AnswerGamesListPacket deserialize_AnswerGamesListPacket(Buffer* buffer){
+    //TO DO : gestion des dépassements
+    AnswerGamesListPacket packet;
+    deserialize_uint8(buffer);
+    packet.nbGames = deserialize_uint32(buffer);
+    for(size_t i = 0; i < packet.nbGames; i++) packet.games[i] = deserialize_game(buffer);
+    for(size_t i = 0; i<packet.nbGames; i++){
+        for(size_t j = 0; j<PLAYER_COUNT; j++){
+            packet.players[i][j] = deserialize_player(buffer);
+        }
+    }
     return packet;
 }
 

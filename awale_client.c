@@ -11,6 +11,21 @@ Player localPlayer;
 Player opponent;
 int awalePlayerIndex;
 
+void print_chat_packet(ChatPacket chatpacket){
+    printf("%s (%d) : %s \r\n", chatpacket.sender.name, chatpacket.sender.id, chatpacket.message);
+}
+
+void send_message(int id, char* message){
+    ChatPacket packet;
+    packet.sender = localPlayer;
+    Player receiver;
+    receiver.id = id;
+    packet.receiver = receiver;
+    strcpy(packet.message, message);
+    Buffer buffer = serialize_ChatPacket(&packet);
+    send_to(client, &buffer);
+}
+
 void process_challenge_in_duel_packet(ChallengeInDuelPacket packet){
     switch(packet.etat){
         case SENT:
@@ -88,6 +103,30 @@ void print_usernames_list(AnswerUsernamesListPacket packet){
     printf("Voici la liste des joueurs connectés :\r\n");
     for(size_t i = 0; i < packet.count; i++){
         printf(" - %s (%d)\r\n", packet.players[i].name, packet.players[i].id);
+    }
+}
+
+void send_request_games_list(){
+    RequestGamesListPacket requestGamesListPacket;
+    Buffer buffer = serialize_RequestGamesListPacket(&requestGamesListPacket);
+    send_to(client, &buffer);
+}
+
+void print_games_list(AnswerGamesListPacket packet){
+    if (localPlayer.status != IDLE) return;
+    printf("\r\nVoici la liste des parties en cours :\r\n\r\n");
+    
+    if(packet.nbGames==0) printf("\r\nIl n'y a pas de partie en cours\r\n"); 
+    
+    for(size_t i = 0; i < packet.nbGames; i++){
+        printf("- Partie %d \r\n",packet.games[i].id);
+        printf("    ");
+        for(int j = 0 ; j < PLAYER_COUNT ; j++){
+            Player current = packet.players[i][j];
+            printf("%s(id=%d)", current.name, current.id);
+            if(j != PLAYER_COUNT-1) printf("  VS  ");
+        }
+        printf("\r\n");
     }
 }
 
@@ -213,6 +252,42 @@ void on_stdin(char* input) {
             } while (id == -1);
             send_challenge_in_duel(id);
         }
+        else if(input[0] == 'm' || strstr(input,"message")){
+            
+            int id = -1;
+            do {
+                int input;
+                printf("Saisissez l'id du joueur destinataire' : \r\n");
+                if (scanf(" %d", &input) != 1) {
+                    printf("Erreur : Saisie invalide.");
+                    while (getchar() != '\n'); // Vide le buffer d'entrée
+                }
+                else if(input == (int) localPlayer.id){
+                    printf("Vous ne pouvez pas vous envoyer de message à vous même ! \r\n\r\n");
+                }
+                else{
+                     id = input;
+                }
+            } while (id == -1);
+            
+            char message[256] = "\0";
+            do {
+                char temp[256];
+                printf("Saisissez le message que vous voulez envoyer' : \r\n");
+                while (getchar() != '\n');
+                if (fgets(temp, sizeof(temp), stdin)==NULL) {
+                    printf("Erreur : Saisie invalide.");
+                    while (getchar() != '\n'); // Vide le buffer d'entrée
+                    continue;
+                }
+                strcpy(message,temp);
+            } while (strcmp(message,"\0")==0);
+
+            send_message(id,message);
+        }
+        else if (input[0] == 'g' || strstr(input,"games")){
+            send_request_games_list(client);
+        }
         break;
     case PLAYING: {
         char *end;
@@ -286,6 +361,9 @@ int main(int argc, char **argv){
             case PACKET_ANSWER_USER_NAMES_LIST:
                 print_usernames_list(deserialize_AnswerUsernamesListPacket(&buffer));
                 break;
+            case PACKET_ANSWER_GAMES_LIST:
+                print_games_list(deserialize_AnswerGamesListPacket(&buffer));
+                break;
             case PACKET_CHALLENGE_IN_DUEL:
                 process_challenge_in_duel_packet(deserialize_ChallengeInDuelPacket(&buffer));
                 break;
@@ -297,6 +375,9 @@ int main(int argc, char **argv){
                 break;
             case PACKET_AWALE_RECONNECT:
                 on_awale_reconnect(deserialize_AwaleReconnectPacket(&buffer));
+                break;
+            case PACKET_CHAT:
+                print_chat_packet(deserialize_ChatPacket(&buffer));
                 break;
             }
         } 

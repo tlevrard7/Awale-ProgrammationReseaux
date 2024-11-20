@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define MAX_GAMES 8
 
 Server server;
 Player players[MAX_CLIENTS];
@@ -18,6 +17,16 @@ int nextPlayerId;
 int new_player_id(Player* player) {
     (void)player;
     return nextPlayerId++; // idea: hash(name+id)
+}
+
+Player* get_player_by_id(uint32_t id){
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (players[i].id == id) {
+            return &players[i];
+        }
+    }
+
+    return NULL; 
 }
 
 int get_num_client_by_idClient(uint32_t idClient){
@@ -65,7 +74,20 @@ void on_connection(int client, ConnectionPacket packet) {
         players[client].status = IDLE;
         players[client].id = new_player_id(&packet.player);
     } else {
-        players[client].id = packet.player.id;
+        // Le joueur s'est connecté en précisant un id
+                
+        // Si un joueur actuellement connecté possède l'id qu'il a renseigné, on lui attribue un nouvel id
+        int find = 0;
+        for(int i = 0; i < server.clientCount; i++){
+            if(players[i].id == packet.player.id){
+                players[client].id = new_player_id(&packet.player);
+                find=1; 
+                break;
+            } 
+        }
+
+        if(find==0) players[client].id = packet.player.id;
+
         printf("%s reconnected\r\n", packet.player.name);
         for (size_t i = 0; i < gameCount; i++) {
             if (get_game_player_index(&games[i], players[client].id) == -1) continue;
@@ -99,6 +121,38 @@ void send_user_names_list(int numClientToSend){
     for(int i=0; i<server.clientCount; i++) packet.players[i] = players[i];
     Buffer buffer = serialize_AnswerUsernamesListPacket(&packet);
     send_to(server.clients[numClientToSend], &buffer);
+}
+
+void send_games_list(int numClientToSend){
+    AnswerGamesListPacket packet;
+    packet.nbGames = gameCount;
+    
+    for(size_t i = 0; i < gameCount; i++){
+        packet.games[i] = games[i];
+        for(int k=0; k<PLAYER_COUNT; k++){
+            Player* p = get_player_by_id(games[i].playerIds[k]);
+            if(p == NULL){
+                // cas où le joueur s'est déconnecté donc il n'est plus dans la liste des players du serveur
+                Player playerDisconnected;
+                playerDisconnected.id = games[i].playerIds[k];
+                playerDisconnected.status = DISCONNECTED;
+                strcpy(playerDisconnected.name,"PLAYER DISCONNECTED");
+                packet.players[i][k] = playerDisconnected;
+            }
+            else{
+                packet.players[i][k] = *p;
+            }
+        }
+    }
+
+    Buffer buffer = serialize_AnswerGamesListPacket(&packet);
+    send_to(server.clients[numClientToSend], &buffer);
+}
+
+void on_packet_chat(ChatPacket chatpacket){
+    Buffer buffer = serialize_ChatPacket(&chatpacket);
+    int numDestinataire = get_num_client_by_idClient(chatpacket.receiver.id);
+    if(numDestinataire!=-1) send_to(server.clients[numDestinataire], &buffer);
 }
 
 void sync_game(Game* game) {
@@ -238,11 +292,17 @@ int main(int argc, char **argv){
             case PACKET_REQUEST_USER_NAMES_LIST:
                 send_user_names_list(client);
                 break;
+            case PACKET_REQUEST_GAMES_LIST:
+                send_games_list(client);
+                break;
             case PACKET_CHALLENGE_IN_DUEL:
                 process_challenge_in_duel_packet(client, deserialize_ChallengeInDuelPacket(&buffer));
                 break;
             case PACKET_AWALE_PLAY:
                 on_awale_play(client, deserialize_AwalePlayPacket(&buffer));
+                break;
+            case PACKET_CHAT:
+                on_packet_chat(deserialize_ChatPacket(&buffer));
                 break;
             }
         }
