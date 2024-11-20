@@ -5,7 +5,6 @@ size_t lobbyCount;
 Lobby lobbies[MAX_LOBBIES];
 u_int32_t nextId;
 
-
 Lobby* open_lobby() {
     if (lobbyCount == MAX_LOBBIES) return NULL;
     Lobby* lobby = &lobbies[lobbyCount++];

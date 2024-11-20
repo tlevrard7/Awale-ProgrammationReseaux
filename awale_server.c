@@ -1,6 +1,7 @@
 #include "awale/awale.h"
 #include "network/server.h"
 #include "packets/packets.h"
+#include "lobby_manager.h"
 #include "stdio.h"
 #include "string.h"
 #include <stdlib.h>
@@ -8,9 +9,6 @@
 
 Server server;
 Player players[MAX_CLIENTS];
-
-size_t lobbyCount;
-Lobby lobbies[MAX_LOBBIES];
 
 int nextPlayerId;
 int new_player_id(Player* player) {
@@ -27,39 +25,12 @@ int get_num_client_by_idClient(uint32_t idClient){
     return -1; 
 }
 
-int nextLobbyId;
-uint32_t create_lobby() {
-    if (lobbyCount == MAX_LOBBIES) return -1;
-    int index = lobbyCount++;
-    lobbies[index].id = nextLobbyId++;
-    lobbies[index].awale = init_game();
-    return index;
-}
-int get_game_index(Lobby* lobby) {
-    for (size_t i = 0; i < lobbyCount; i++) {
-        if (&lobbies[i] == lobby) return i;
-    }
-    return -1;
-}
-
-int get_game_player_index(Lobby* game, uint32_t playerId) {
-    for (size_t i = 0; i < PLAYER_COUNT; i++) {
-        if (game->players[i]->id == playerId) return i;
-    }
-    return -1;
-}
-
-void remove_game(int gameIndex) {
-    memmove(lobbies + gameIndex, lobbies + gameIndex + 1, (lobbyCount - gameIndex - 1) * sizeof(Lobby));
-    lobbyCount--;
-}
-
 // if leave, lobbyId = -1, create -2
 void join_lobby(int client, uint32_t lobbyId) {
     Player* player = &players[client];
 
     Lobby *lobby;
-    if (lobbyId == -1) lobby = new_lobby();
+    if (lobbyId == -1) lobby = open_lobby();
     else lobby = get_lobby(lobbyId);
 
     if (lobby == NULL || lobby->playerCount == MAX_CLIENTS) { // TODO reconnect
@@ -96,6 +67,8 @@ void join_lobby(int client, uint32_t lobbyId) {
         disconnect_client(&server, client);
         return;
     }
+
+    join_lobby(player, lobby);
 
     player->lobby = lobby;
     lobby->players[lobby->playerCount++] = player;
