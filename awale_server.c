@@ -6,13 +6,13 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define MAX_GAMES 8
+#define MAX_LOBBIES 8
 
 Server server;
 Player players[MAX_CLIENTS];
 
-size_t gameCount;
-Game games[MAX_GAMES];
+size_t lobbyCount;
+Lobby lobbies[MAX_LOBBIES];
 
 int nextPlayerId;
 int new_player_id(Player* player) {
@@ -29,31 +29,31 @@ int get_num_client_by_idClient(uint32_t idClient){
     return -1; 
 }
 
-int nextGameId;
-uint32_t create_game() {
-    if (gameCount == MAX_GAMES) return -1;
-    int index = gameCount++;
-    games[index].id = nextGameId++;
-    games[index].awale = init_game();
+int nextLobbyId;
+uint32_t create_lobby() {
+    if (lobbyCount == MAX_LOBBIES) return -1;
+    int index = lobbyCount++;
+    lobbies[index].id = nextLobbyId++;
+    lobbies[index].awale = init_game();
     return index;
 }
-int get_game_index(uint32_t id) {
-    for (size_t i = 0; i < gameCount; i++) {
-        if (games[i].id == id) return i;
+int get_game_index(Lobby* lobby) {
+    for (size_t i = 0; i < lobbyCount; i++) {
+        if (&lobbies[i] == lobby) return i;
     }
     return -1;
 }
 
-int get_game_player_index(Game* game, uint32_t playerId) {
+int get_game_player_index(Lobby* game, uint32_t playerId) {
     for (size_t i = 0; i < PLAYER_COUNT; i++) {
-        if (game->playerIds[i] == playerId) return i;
+        if (game->players[i]->id == playerId) return i;
     }
     return -1;
 }
 
 void remove_game(int gameIndex) {
-    memmove(games + gameIndex, games + gameIndex + 1, (gameCount - gameIndex - 1) * sizeof(Game));
-    gameCount--;
+    memmove(lobbies + gameIndex, lobbies + gameIndex + 1, (lobbyCount - gameIndex - 1) * sizeof(Lobby));
+    lobbyCount--;
 }
 
 void on_connection(int client, ConnectionPacket packet) {
@@ -67,12 +67,12 @@ void on_connection(int client, ConnectionPacket packet) {
     } else {
         players[client].id = packet.player.id;
         printf("%s reconnected\r\n", packet.player.name);
-        for (size_t i = 0; i < gameCount; i++) {
-            if (get_game_player_index(&games[i], players[client].id) == -1) continue;
-            players[client].gameId = games[i].id;
+        for (size_t i = 0; i < lobbyCount; i++) {
+            if (get_game_player_index(&lobbies[i], players[client].id) == -1) continue;
+            players[client].lobby = &lobbies[i];
             break;
         }
-        players[client].status = players[client].gameId == 0 ? IDLE : PLAYING;
+        players[client].status = players[client].lobby == NULL ? IDLE : PLAYING;
     }
     strcpy(players[client].name, packet.player.name);
 
@@ -82,11 +82,11 @@ void on_connection(int client, ConnectionPacket packet) {
     send_to(server.clients[client], &buffer);
 
     if (players[client].status == PLAYING) {
-        int gIndex = get_game_index(players[client].gameId);
-        int playerIndex = get_game_player_index(&games[gIndex], players[client].id);
+        int gIndex = get_game_index(players[client].lobby);
+        int playerIndex = get_game_player_index(&lobbies[gIndex], players[client].id);
         AwaleReconnectPacket packet = {
-            games[gIndex].awale,
-            players[get_num_client_by_idClient(games[gIndex].playerIds[1 - playerIndex])],
+            lobbies[gIndex].awale,
+            *lobbies[gIndex].players[1-playerIndex],
             playerIndex};
         Buffer buffer = serialize_AwaleReconnectPacket(&packet);
         send_to(server.clients[client], &buffer);
@@ -101,10 +101,10 @@ void send_user_names_list(int numClientToSend){
     send_to(server.clients[numClientToSend], &buffer);
 }
 
-void sync_game(Game* game) {
+void sync_game(Lobby* game) {
     AwaleSyncPacket packet = {game->awale};
     Buffer buffer = serialize_AwaleSyncPacket(&packet);
-    for (size_t i = 0; i < PLAYER_COUNT; i++) send_to(server.clients[get_num_client_by_idClient(game->playerIds[i])], &buffer);
+    for (size_t i = 0; i < PLAYER_COUNT; i++) send_to(server.clients[get_num_client_by_idClient(game->players[i]->id)], &buffer);
 }
 
 void process_challenge_in_duel_packet(int client, ChallengeInDuelPacket packet){
@@ -141,16 +141,16 @@ void process_challenge_in_duel_packet(int client, ChallengeInDuelPacket packet){
             if (players[client].status != CHALLENGED || players[requesterClient].status != CHALLENGED) return;
             send_to(server.clients[requesterClient], &buffer);
 
-            int index = create_game();
+            int index = create_lobby();
             if (index != -1) {
-                games[index].playerIds[0] = players[requesterClient].id;
-                players[requesterClient].gameId = games[index].id;
+                lobbies[index].players[0] = &players[requesterClient];
+                players[requesterClient].lobby = &lobbies[index];
                 players[requesterClient].status = PLAYING;
-                games[index].playerIds[1] = players[client].id;
-                players[client].gameId = games[index].id;
+                lobbies[index].players[1] = &players[client];
+                players[client].lobby = &lobbies[index];
                 players[client].status = PLAYING;
-                sync_game(&games[index]);
-                printf("Started a game (%d) between %s (%d) and %s (%d)\r\n", games[index].id, players[requesterClient].name, players[requesterClient].id, players[client].name, players[client].id);
+                sync_game(&lobbies[index]);
+                printf("Started a game (%d) between %s (%d) and %s (%d)\r\n", lobbies[index].id, players[requesterClient].name, players[requesterClient].id, players[client].name, players[client].id);
             } else {
                 // TODO cannot start game
             }
@@ -171,22 +171,22 @@ void process_challenge_in_duel_packet(int client, ChallengeInDuelPacket packet){
 
 void on_awale_play(int client, AwalePlayPacket packet) {
     if (players[client].status != PLAYING) return;
-    int gIndex = get_game_index(players[client].gameId);
-    PlayResult res = play(&games[gIndex].awale, get_game_player_index(&games[gIndex], players[client].id), packet.cell);
+    int gIndex = get_game_index(players[client].lobby);
+    PlayResult res = play(&lobbies[gIndex].awale, get_game_player_index(&lobbies[gIndex], players[client].id), packet.cell);
 
     AwalePlayAckPacket response = {res};
     Buffer buffer = serialize_AwalePlayAckPacket(&response);
     send_to(server.clients[client], &buffer);
     if (res != PLAYED) return;
 
-    sync_game(&games[gIndex]);
+    sync_game(&lobbies[gIndex]);
 
-    if (games[gIndex].awale.state < 0) return;
-    printf("Game %d finish with state %d\r\n", players[client].gameId, games[gIndex].awale.state);
+    if (lobbies[gIndex].awale.state < 0) return;
+    printf("Game %d finish with state %d\r\n", players[client].lobby->id, lobbies[gIndex].awale.state);
     for (size_t i = 0; i < PLAYER_COUNT; i++) {
-        int pIndex = get_num_client_by_idClient(games[gIndex].playerIds[i]);
+        int pIndex = get_num_client_by_idClient(lobbies[gIndex].players[i]->id);
         players[pIndex].status = IDLE;
-        players[pIndex].gameId = 0;
+        players[pIndex].lobby = NULL;
         remove_game(gIndex);
     }
 }
@@ -206,8 +206,8 @@ int main(int argc, char **argv){
     init_network();
 
     nextPlayerId = 1;
-    nextGameId = 1;
-    gameCount = 0;
+    nextLobbyId = 1;
+    lobbyCount = 0;
     server = create_server(atoi(argv[1]));
 
     while (1) {

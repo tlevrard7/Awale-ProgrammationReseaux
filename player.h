@@ -11,15 +11,18 @@ typedef enum PlayerStatus {
     PLAYING,
 } PlayerStatus;
 
+
+typedef struct Lobby Lobby;
+
 typedef struct Player {
     uint32_t id;
     PlayerStatus status;
     char name[256];
-    uint32_t gameId;
+    Lobby* lobby;
 } Player;
 
-typedef struct Game {
+struct Lobby {
     uint32_t id;
-    uint32_t playerIds[PLAYER_COUNT];
+    Player* players[PLAYER_COUNT];
     Awale awale;
-} Game;
+};
