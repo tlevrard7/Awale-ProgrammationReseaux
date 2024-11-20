@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define MAX_LOBBIES 8
-
 Server server;
 Player players[MAX_CLIENTS];
 
@@ -56,41 +54,114 @@ void remove_game(int gameIndex) {
     lobbyCount--;
 }
 
+// if leave, lobbyId = -1, create -2
+void join_lobby(int client, uint32_t lobbyId) {
+    Player* player = &players[client];
+
+    Lobby *lobby;
+    if (lobbyId == -1) lobby = new_lobby();
+    else lobby = get_lobby(lobbyId);
+
+    if (lobby == NULL || lobby->playerCount == MAX_CLIENTS) { // TODO reconnect
+        // TODO respond fail
+        return;
+    }
+
+    if (player->lobby != NULL) {
+        if (player->lobby->id == lobbyId) {
+            // TODO respond fail
+            return;
+        } else {
+            // TODO if a player and not a spec
+            int lobbyPlayerIndex = get_lobby_player_index(player);
+
+            memmove(lobby->players + lobbyPlayerIndex, lobby->players + lobbyPlayerIndex + 1, (lobby->playerCount - lobbyPlayerIndex - 1) * sizeof(Player*));
+            lobby->playerCount--;
+
+            if (lobby->playerCount == 0) {
+                del_lobby(lobby);
+                // int lobbyIndex = get_lobby_index(lobby);
+                // memmove(lobbies + lobbyIndex, lobbies + lobbyIndex + 1, (lobbyCount - lobbyIndex - 1) * sizeof(Lobby));
+                // lobbyCount--;
+            } else {
+                LobbyPlayerLeavePacket onLeavePacket;
+                onLeavePacket.playerIndex = lobbyPlayerIndex;
+                Buffer buffer = serialize_LobbyPlayerJoinPacket(&onLeavePacket);
+                for (size_t i = 0; i < lobby->playerCount; i++) send_to(server.clients[get_player_index(lobby->players[i])], &buffer);
+            }
+        }
+    }
+
+    if (lobbyId == -1 || player->lobby == 0) {
+        disconnect_client(&server, client);
+        return;
+    }
+
+    player->lobby = lobby;
+    lobby->players[lobby->playerCount++] = player;
+
+    {
+        LobbyJoinAckPacket lobbyPacket;
+        lobbyPacket.lobby = to_lobby_display(lobby);
+        Buffer buffer = serialize_LobbyJoinAckPacket(&lobbyPacket);
+        send_to(server.clients[client], &buffer);
+    }
+    {
+        LobbyPlayerJoinPacket onJoinPacket;
+        onJoinPacket.player = to_player_display(player);
+        Buffer buffer = serialize_LobbyPlayerJoinPacket(&onJoinPacket);
+
+        for (size_t i = 0; i < lobby->playerCount; i++) {
+            if (lobby->players[i] != player) send_to(server.clients[get_player_index(lobby->players[i])], &buffer);
+        }
+    }
+}
+
 void on_connection(int client, ConnectionPacket packet) {
-    if (players[client].status != CONNECTING) return;
+    Player* player = &players[client];
+    if (player->status != CONNECTING) return;
 
     // On rajoute le nouveau joueur à la liste players
-    if (packet.player.id == 0) {
+    uint32_t lobbyId = 0;
+    if (packet.id == 0) {
         printf("%s joined\r\n",packet.player.name); 
-        players[client].status = IDLE;
-        players[client].id = new_player_id(&packet.player);
+        player->id = new_player_id(&packet.player);
+        strcpy(player->name, packet.player.name);
+        player->status = IDLE;
+        player->lobby = NULL;
     } else {
-        players[client].id = packet.player.id;
-        printf("%s reconnected\r\n", packet.player.name);
-        for (size_t i = 0; i < lobbyCount; i++) {
-            if (get_game_player_index(&lobbies[i], players[client].id) == -1) continue;
-            players[client].lobby = &lobbies[i];
-            break;
-        }
-        players[client].status = players[client].lobby == NULL ? IDLE : PLAYING;
+        // player->id = packet.player.id;
+        // printf("%s reconnected\r\n", packet.player.name);
+        // for (size_t i = 0; i < lobbyCount; i++) {
+        //     if (get_game_player_index(&lobbies[i], player->id) == -1) continue;
+        //     player->lobby = &lobbies[i];
+        //     break;
+        // }
+        // player->status = player->lobby == NULL ? IDLE : PLAYING;
     }
-    strcpy(players[client].name, packet.player.name);
 
     ConnectionAckPacket response;
-    response.id = players[client].id;
+    response.id = player->id;
     Buffer buffer = serialize_ConnectionAckPacket(&response);
     send_to(server.clients[client], &buffer);
 
-    if (players[client].status == PLAYING) {
-        int gIndex = get_game_index(players[client].lobby);
-        int playerIndex = get_game_player_index(&lobbies[gIndex], players[client].id);
-        AwaleReconnectPacket packet = {
-            lobbies[gIndex].awale,
-            *lobbies[gIndex].players[1-playerIndex],
-            playerIndex};
-        Buffer buffer = serialize_AwaleReconnectPacket(&packet);
-        send_to(server.clients[client], &buffer);
-    }
+    join_lobby(client, lobbyId);
+
+    // if (player->status != PLAYING) {
+    //     LobbyJoinPacket lobbyPacket;
+    //     lobbyPacket.lobby = to_lobby_display(player->lobby);
+    //     Buffer buffer = serialize_LobbyJoinPacket(&lobbyPacket);
+    //     send_to(server.clients[client], &buffer);
+    // } else {
+    //     int gIndex = get_game_index(player->lobby);
+    //     int playerIndex = get_game_player_index(&lobbies[gIndex], player->id);
+    //     AwaleReconnectPacket packet = {
+    //         lobbies[gIndex].awale,
+    //         *lobbies[gIndex].players[1-playerIndex],
+    //         playerIndex};
+    //     Buffer buffer = serialize_AwaleReconnectPacket(&packet);
+    //     send_to(server.clients[client], &buffer);
+    // }
 }
 
 void send_user_names_list(int numClientToSend){
@@ -221,8 +292,7 @@ int main(int argc, char **argv){
         }
         if (fd_is_set_accept(&server, &rdfs)) {
             accept_connection(&server);
-            players[server.clientCount-1].status = CONNECTING;
-            players[server.clientCount-1].id = 0;
+            players[server.clientCount - 1] = new_player();
         } else {
             int client;
             Buffer buffer = receive_server(&server, &client, &rdfs);

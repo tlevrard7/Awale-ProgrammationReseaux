@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../network/network.h"
-#include "../player.h"
+#include "../player.h" // TODO remove
+#include "../player_display.h"
 #include "../awale/awale.h"
 
 #define MAX_NAME_SIZE 8 // Pour ne pas avoir à gérer le cas où le bufffer est trop petit pour contenir tous les pseudos
@@ -20,7 +21,8 @@ typedef enum PacketId {
 } PacketId;
 
 typedef struct ConnectionPacket {
-    Player player;
+    uint32_t id;
+    PlayerDisplay player;
 } ConnectionPacket;
 
 Buffer serialize_ConnectionPacket(ConnectionPacket* packet);
