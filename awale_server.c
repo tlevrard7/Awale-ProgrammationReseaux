@@ -20,7 +20,7 @@ int new_player_id(Player* player) {
 }
 
 Player* get_player_by_id(uint32_t id){
-    for (int i = 0; i < MAX_CLIENTS; i++) {
+    for (int i = 0; i < server.clientCount; i++) {
         if (players[i].id == id) {
             return &players[i];
         }
@@ -30,7 +30,7 @@ Player* get_player_by_id(uint32_t id){
 }
 
 int get_num_client_by_idClient(uint32_t idClient){
-    for (int i = 0; i < MAX_CLIENTS; i++) {
+    for (int i = 0; i < server.clientCount; i++) {
         if (players[i].id == idClient) {
             return i;
         }
@@ -67,6 +67,10 @@ void remove_game(int gameIndex) {
 
 void on_connection(int client, ConnectionPacket packet) {
     if (players[client].status != CONNECTING) return;
+
+    // On initialise les attributs du nouveau joueur
+    players[client].status = IDLE; 
+    players[client].gameId = 0;
 
     // On rajoute le nouveau joueur à la liste players
     if (packet.player.id == 0) {
@@ -166,7 +170,13 @@ void on_packet_chat(ChatPacket chatpacket){
 void sync_game(Game* game) {
     AwaleSyncPacket packet = {game->awale};
     Buffer buffer = serialize_AwaleSyncPacket(&packet);
-    for (size_t i = 0; i < PLAYER_COUNT; i++) send_to(server.clients[get_num_client_by_idClient(game->playerIds[i])], &buffer);
+    for (size_t i = 0; i < PLAYER_COUNT; i++){
+        // On vérifie que le joueur est toujours connecté pour savoir si on doit lui envoyer le nouvel état
+        int idClient = get_num_client_by_idClient(game->playerIds[i]);
+        if(idClient != -1 && players[idClient].status == PLAYING){
+            send_to(server.clients[get_num_client_by_idClient(game->playerIds[i])], &buffer);
+        } 
+    } 
 }
 
 void process_challenge_in_duel_packet(int client, ChallengeInDuelPacket packet){
@@ -254,7 +264,8 @@ void on_awale_play(int client, AwalePlayPacket packet) {
 }
 
 void on_disconnect(int numClient) {
-    // On enlève le joueur de la liste des players
+    // On enlève le joueur de la liste des players    
+    memset(&players[numClient], 0, sizeof(Player)); // On s'assure qu'on ne laisse pas des données résiduelles (de l'ancien joueur)
     memmove(players + numClient, players + numClient + 1, (server.clientCount - numClient - 1) * sizeof(Player));
 }
 
