@@ -86,7 +86,15 @@ void on_connection(int client, ConnectionPacket packet) {
             } 
         }
 
-        if(find==0) players[client].id = packet.player.id;
+        if(find==0){
+            players[client].id = packet.player.id;
+            if(nextPlayerId <= (int) packet.player.id){
+                nextPlayerId = packet.player.id+1;
+            }
+            else{
+                nextPlayerId++;
+            }
+        } 
 
         printf("%s reconnected\r\n", packet.player.name);
         for (size_t i = 0; i < gameCount; i++) {
