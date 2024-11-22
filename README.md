@@ -11,6 +11,9 @@
     $ make all
     ```
     **Remarque :** Il faut être sur une machine linux
+## Evolutivité 
+Nous avons mis l'accent sur l'évolutivité de notre code en adoptant une architecture modulaire. En effet, le projet est organisé en modules distincts, chacun ayant une responsabilité spécifique.
+De plus, les données échangées sont encapsulées sous forme de paquets de communication (cf. packet.h/packet.c). Chaque type de paquet dispose de ses propres fonctions de sérialisation et de désérialisation, permettant une interaction simplifiée avec le buffer utilisé pour la transmission. D'ailleurs, ces fonctions sont largement simplifiées grâce aux fonctionnalités offertes par buffer.h/buffer.c.
 ## Fonctionnalités implémentées 
 ### 🔗 Connexion et affichage des joueurs  
 - **Connexion au serveur**
